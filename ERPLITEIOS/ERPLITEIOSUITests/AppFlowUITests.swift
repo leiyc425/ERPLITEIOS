@@ -36,8 +36,9 @@ final class AppFlowUITests: XCTestCase {
         inventory.tap()
         XCTAssertTrue(app.staticTexts["Sample physical unit"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["inventory.list"].exists)
-        app.navigationBars.buttons["Dashboard"].tap()
 
+        app.tabBars.buttons["Dashboard"].tap()
+        XCTAssertTrue(signOut.waitForExistence(timeout: 5))
         signOut.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["login.root"].waitForExistence(timeout: 10))

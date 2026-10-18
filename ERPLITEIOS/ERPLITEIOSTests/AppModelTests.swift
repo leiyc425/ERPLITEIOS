@@ -64,7 +64,8 @@ struct AppModelTests {
                 httpClient: trap,
                 clock: SystemDateProvider(),
                 records: MockERPReader(catalog: .empty),
-                health: LiveHealthCheck(configuration: configuration, client: trap)
+                health: LiveHealthCheck(configuration: configuration, client: trap),
+                connection: ConnectionSettings(bundled: configuration, store: MemoryEndpointStore())
             )
         )
         await model.bootstrap()
@@ -94,7 +95,8 @@ struct AppModelTests {
                     httpClient: trap,
                     clock: clock,
                     records: MockERPReader(catalog: .sample),
-                    health: LiveHealthCheck(configuration: .mockDefault, client: trap)
+                    health: LiveHealthCheck(configuration: .mockDefault, client: trap),
+                    connection: ConnectionSettings(bundled: .mockDefault, store: MemoryEndpointStore())
                 )
             )
         }

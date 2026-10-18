@@ -9,13 +9,57 @@ protocol ERPReading {
     func loadCatalog() async throws -> ERPCatalog
 }
 
+protocol DashboardProviding {
+    func loadDashboard() async throws -> ERPCatalog
+}
+
+struct InventorySnapshot: Equatable {
+    var units: [InventoryItemRecord]
+    var skus: [SKUProductRecord]
+    var origin: DataOrigin
+}
+
+protocol InventoryProviding {
+    func loadInventory() async throws -> InventorySnapshot
+}
+
+struct ClientSnapshot: Equatable {
+    var clients: [ClientRecord]
+    var origin: DataOrigin
+}
+
+protocol ClientProviding {
+    func loadClients() async throws -> ClientSnapshot
+}
+
+struct SaleSnapshot: Equatable {
+    var sales: [SaleRecord]
+    var origin: DataOrigin
+}
+
+protocol SaleProviding {
+    func loadSales() async throws -> SaleSnapshot
+}
+
+struct InvoiceSnapshot: Equatable {
+    var invoices: [InvoiceRecord]
+    var sales: [SaleRecord]
+    var origin: DataOrigin
+}
+
+protocol InvoiceProviding {
+    func loadInvoices() async throws -> InvoiceSnapshot
+}
+
+protocol ERPProviding: ERPReading, DashboardProviding, InventoryProviding, ClientProviding, SaleProviding, InvoiceProviding {}
+
 struct CatalogFailure: Error, Equatable, LocalizedError {
     var message: String
 
     var errorDescription: String? { message }
 }
 
-struct MockERPReader: ERPReading {
+struct MockERPReader: ERPProviding {
     var catalog: ERPCatalog
     var failure: CatalogFailure?
 
@@ -24,6 +68,30 @@ struct MockERPReader: ERPReading {
             throw failure
         }
         return catalog
+    }
+
+    func loadDashboard() async throws -> ERPCatalog {
+        try await loadCatalog()
+    }
+
+    func loadInventory() async throws -> InventorySnapshot {
+        let catalog = try await loadCatalog()
+        return InventorySnapshot(units: catalog.inventory, skus: catalog.skus, origin: catalog.origin)
+    }
+
+    func loadClients() async throws -> ClientSnapshot {
+        let catalog = try await loadCatalog()
+        return ClientSnapshot(clients: catalog.clients, origin: catalog.origin)
+    }
+
+    func loadSales() async throws -> SaleSnapshot {
+        let catalog = try await loadCatalog()
+        return SaleSnapshot(sales: catalog.sales, origin: catalog.origin)
+    }
+
+    func loadInvoices() async throws -> InvoiceSnapshot {
+        let catalog = try await loadCatalog()
+        return InvoiceSnapshot(invoices: catalog.invoices, sales: catalog.sales, origin: catalog.origin)
     }
 }
 
@@ -90,7 +158,20 @@ extension ERPCatalog {
                 clientType: .company,
                 name: "Sample Company",
                 notes: "",
-                isActive: true
+                isActive: true,
+                billingProfile: ClientBillingProfileRecord(
+                    legalBillingName: "Sample Company",
+                    contactName: "Sample Contact",
+                    billingEmail: "billing@example.com",
+                    billingPhone: "613-555-0100",
+                    addressLine1: "1 Sample Street",
+                    city: "Ottawa",
+                    regionCode: "ON",
+                    postalCode: "K1A 0B1",
+                    countryCode: "CA",
+                    isDefault: true,
+                    isActive: true
+                )
             ),
             ClientRecord(
                 id: 2,

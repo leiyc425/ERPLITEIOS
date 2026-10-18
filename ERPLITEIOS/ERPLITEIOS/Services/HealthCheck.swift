@@ -14,9 +14,11 @@ protocol HealthChecking {
 struct LiveHealthCheck: HealthChecking {
     var configuration: AppConfiguration
     var client: any HTTPClientProtocol
+    var endpoint: ConnectionSettings?
 
     func check() async throws -> HealthReport {
-        guard configuration.baseURL != nil else {
+        let baseURL = endpoint?.effectiveBaseURL ?? configuration.baseURL
+        guard let baseURL else {
             throw APIError.backendNotConfigured
         }
         let status = try await client.send(
@@ -25,7 +27,8 @@ struct LiveHealthCheck: HealthChecking {
                 path: "health",
                 requiresAuthentication: false,
                 versionPrefix: "",
-                trailingSlash: true
+                trailingSlash: true,
+                baseURLOverride: baseURL
             ),
             as: HealthStatus.self
         )

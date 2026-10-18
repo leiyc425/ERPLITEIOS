@@ -191,6 +191,34 @@ struct HTTPClientTests {
         #expect(requestedURL.value == "https://example.com/health/")
     }
 
+    @Test func healthCheckCanUseASavedBaseURLWhenTheClientHasNone() async throws {
+        let body = #"{"status":"ok","database":"ok"}"#.data(using: .utf8) ?? Data()
+        let requestedURL = URLBox()
+        StubURLProtocol.setHandler { request in
+            requestedURL.set(request.url?.absoluteString)
+            return StubURLProtocol.Response(status: 200, body: body, headers: [:])
+        }
+        defer { StubURLProtocol.setHandler(nil) }
+
+        let store = MemoryEndpointStore()
+        let settings = ConnectionSettings(bundled: .mockDefault, store: store)
+        settings.draft = "https://example.com"
+        settings.saveDraft()
+        let checker = LiveHealthCheck(
+            configuration: .mockDefault,
+            client: URLSessionHTTPClient(
+                configuration: .mockDefault,
+                protocolClasses: [StubURLProtocol.self],
+                authorizer: PendingContractAuthorizer()
+            ),
+            endpoint: settings
+        )
+        let report = try await checker.check()
+        #expect(report.origin == .backend)
+        #expect(requestedURL.value == "https://example.com/health/")
+        #expect(settings.bundled.contractIntegrated == false)
+    }
+
     private func configuredExample() -> AppConfiguration {
         AppConfiguration(
             baseURL: URL(string: "https://example.com"),

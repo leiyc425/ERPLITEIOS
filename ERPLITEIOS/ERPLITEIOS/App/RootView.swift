@@ -29,7 +29,7 @@ struct RootView: View {
                     notice: sessionNotice
                 )
             case .authenticated(let session):
-                DashboardView(
+                AppShellView(
                     session: session,
                     dependencies: model.dependencies
                 ) {

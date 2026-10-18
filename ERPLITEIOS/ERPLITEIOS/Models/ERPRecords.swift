@@ -141,6 +141,20 @@ struct SKUProductRecord: Identifiable, Equatable {
     var available: Int { onHand - reserved }
 }
 
+struct ClientBillingProfileRecord: Equatable {
+    var legalBillingName: String
+    var contactName: String
+    var billingEmail: String
+    var billingPhone: String
+    var addressLine1: String
+    var city: String
+    var regionCode: String
+    var postalCode: String
+    var countryCode: String
+    var isDefault: Bool
+    var isActive: Bool
+}
+
 struct ClientRecord: Identifiable, Equatable {
     var id: Int
     var clientNumber: String
@@ -148,6 +162,7 @@ struct ClientRecord: Identifiable, Equatable {
     var name: String
     var notes: String
     var isActive: Bool
+    var billingProfile: ClientBillingProfileRecord? = nil
 }
 
 struct PaymentRecord: Identifiable, Equatable {

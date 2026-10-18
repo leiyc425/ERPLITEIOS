@@ -37,7 +37,7 @@ xcodebuild \
 
 ## Run the shell
 
-The app opens on a mock sign-in screen. Any non-empty username and password is accepted on the device. The password is not sent anywhere. After sign-in, Inventory (units and SKU stock), Clients, Sales, and Invoices show mock samples labeled MOCK. Invoice totals are stored samples. The app does not calculate tax. Check backend health sends `GET /health/` only when a base URL is configured.
+The app opens on a mock sign-in screen. Any non-empty username and password is accepted on the device. The password is not sent anywhere. After sign-in, tabs open Dashboard, Inventory, Sales, Invoices, Clients, and Settings. Those business screens use mock samples labeled MOCK. Invoice totals are stored samples. The app does not calculate tax. Settings can save a development base URL and send `GET /health/`. That check does not enable business lists. The saved value is a URL, not a token.
 
 Launch arguments:
 

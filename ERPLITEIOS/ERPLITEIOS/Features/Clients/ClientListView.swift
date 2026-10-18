@@ -8,7 +8,7 @@ import SwiftUI
 struct ClientListView: View {
     @State private var viewModel: ClientListViewModel
 
-    init(records: any ERPReading) {
+    init(records: any ClientProviding) {
         _viewModel = State(initialValue: ClientListViewModel(records: records))
     }
 
@@ -20,7 +20,15 @@ struct ClientListView: View {
             state: viewModel.state,
             retry: { Task { await viewModel.load() } }
         ) {
-            ForEach(viewModel.clients) { client in
+            TextField("Search clients", text: $viewModel.query)
+                .textInputAutocapitalization(.never)
+                .accessibilityLabel("Search clients")
+                .accessibilityIdentifier("clients.search")
+            if viewModel.filteredClients.isEmpty {
+                Text("No clients match this search.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(viewModel.filteredClients) { client in
                 NavigationLink {
                     ClientDetailView(client: client)
                 } label: {
@@ -49,7 +57,29 @@ struct ClientDetailView: View {
             if !client.notes.isEmpty {
                 Text(client.notes)
             }
-            Text("Deletion is blocked on the server when a client has sales, expenses, or a billing profile. This screen does not delete records.")
+            Section("Billing profile") {
+                if let profile = client.billingProfile {
+                    LabeledContent("Legal billing name", value: profile.legalBillingName)
+                    LabeledContent("Default", value: profile.isDefault ? "Yes" : "No")
+                    LabeledContent("Active", value: profile.isActive ? "Yes" : "No")
+                    if !profile.contactName.isEmpty {
+                        LabeledContent("Contact", value: profile.contactName)
+                    }
+                    if !profile.billingEmail.isEmpty {
+                        LabeledContent("Email", value: profile.billingEmail)
+                    }
+                    if !profile.billingPhone.isEmpty {
+                        LabeledContent("Phone", value: profile.billingPhone)
+                    }
+                    if !profile.addressLine1.isEmpty {
+                        LabeledContent("Address", value: "\(profile.addressLine1), \(profile.city) \(profile.regionCode) \(profile.postalCode)")
+                    }
+                } else {
+                    Text("No billing profile is on this sample.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text("Creating, editing, and deleting stay on the server. A billing profile also blocks client deletion there.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }

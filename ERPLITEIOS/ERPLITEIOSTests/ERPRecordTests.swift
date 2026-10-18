@@ -115,4 +115,58 @@ struct CatalogListViewModelTests {
         #expect(viewModel.origin == .mock)
         #expect(viewModel.items.contains { $0.name == "Sample physical unit" })
     }
+
+    @Test func searchAndStatusFilterUnits() async {
+        let viewModel = InventoryListViewModel(records: MockERPReader(catalog: .sample))
+        await viewModel.load()
+        viewModel.unitQuery = "reserved"
+        #expect(viewModel.filteredUnits.map(\.inventoryNumber) == ["0002"])
+        viewModel.unitQuery = ""
+        viewModel.unitStatus = .sold
+        #expect(viewModel.filteredUnits.map(\.inventoryNumber) == ["0003"])
+        viewModel.skuAvailability = .available
+        #expect(viewModel.filteredSKUs.map(\.sku) == ["SAMPLE-SKU"])
+        #expect(viewModel.filteredSKUs.first?.available == 6)
+    }
+
+    @Test func sampleClientShowsABillingProfile() {
+        let company = ERPCatalog.sample.clients.first { $0.clientNumber == "0001" }
+        #expect(company?.billingProfile?.isActive == true)
+        #expect(company?.billingProfile?.isDefault == true)
+        #expect(company?.billingProfile?.legalBillingName == "Sample Company")
+        let person = ERPCatalog.sample.clients.first { $0.clientNumber == "0002" }
+        #expect(person?.billingProfile == nil)
+    }
+}
+
+@MainActor
+struct ConnectionSettingsTests {
+    @Test func savedURLIsUsedForHealthAndDoesNotIntegrateTheContract() {
+        let store = MemoryEndpointStore()
+        let settings = ConnectionSettings(bundled: .mockDefault, store: store)
+        settings.draft = "https://example.com/erp"
+        settings.saveDraft()
+        #expect(settings.effectiveBaseURL == URL(string: "https://example.com/erp"))
+        #expect(store.load() == "https://example.com/erp")
+        #expect(settings.bundled.contractIntegrated == false)
+
+        settings.draft = "http://user:secret@example.com"
+        settings.saveDraft()
+        #expect(settings.overrideURL == URL(string: "https://example.com/erp"))
+        #expect(settings.validationMessage != nil)
+        #expect(!store.load().contains("secret"))
+    }
+
+    @Test func dashboardUsesIssuedBalancesOnly() async {
+        let viewModel = DashboardViewModel(
+            session: Session(accountLabel: "Ada", expiresAt: nil, isMock: true),
+            configuration: .mockDefault,
+            records: MockERPReader(catalog: .sample)
+        )
+        await viewModel.load()
+        #expect(viewModel.state == .loaded)
+        #expect(viewModel.issuedBalanceDue == Decimal(string: "45.20"))
+        #expect(viewModel.skuAvailable == 6)
+        #expect(viewModel.configuration.contractIntegrated == false)
+    }
 }

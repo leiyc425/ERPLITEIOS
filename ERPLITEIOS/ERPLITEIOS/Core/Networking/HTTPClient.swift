@@ -45,7 +45,7 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
     }
 
     func send(_ request: HTTPRequest) async throws -> HTTPResponse {
-        guard let baseURL else {
+        guard let baseURL = request.baseURLOverride ?? baseURL else {
             throw APIError.backendNotConfigured
         }
 

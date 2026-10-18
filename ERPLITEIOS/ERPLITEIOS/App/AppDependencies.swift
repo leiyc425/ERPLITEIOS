@@ -12,8 +12,9 @@ struct AppDependencies {
     var authService: any AuthServicing
     var httpClient: any HTTPClientProtocol
     var clock: any DateProviding
-    var records: any ERPReading
+    var records: any ERPProviding
     var health: any HealthChecking
+    var connection: ConnectionSettings
 
     static func live(
         bundle: Bundle = .main,
@@ -43,6 +44,10 @@ struct AppDependencies {
             configuration: configuration,
             authorizer: PendingContractAuthorizer()
         )
+        let connection = ConnectionSettings(
+            bundled: configuration,
+            store: UserDefaultsEndpointStore()
+        )
         return AppDependencies(
             configuration: configuration,
             tokenStore: tokenStore,
@@ -50,7 +55,8 @@ struct AppDependencies {
             httpClient: httpClient,
             clock: clock,
             records: MockERPReader(catalog: .sample),
-            health: LiveHealthCheck(configuration: configuration, client: httpClient)
+            health: LiveHealthCheck(configuration: configuration, client: httpClient, endpoint: connection),
+            connection: connection
         )
     }
 
@@ -63,6 +69,7 @@ struct AppDependencies {
             configuration: configuration,
             authorizer: PendingContractAuthorizer()
         )
+        let connection = ConnectionSettings(bundled: configuration, store: MemoryEndpointStore())
         return AppDependencies(
             configuration: configuration,
             tokenStore: tokenStore,
@@ -70,7 +77,8 @@ struct AppDependencies {
             httpClient: httpClient,
             clock: clock,
             records: MockERPReader(catalog: .sample),
-            health: LiveHealthCheck(configuration: configuration, client: httpClient)
+            health: LiveHealthCheck(configuration: configuration, client: httpClient, endpoint: connection),
+            connection: connection
         )
     }
 }

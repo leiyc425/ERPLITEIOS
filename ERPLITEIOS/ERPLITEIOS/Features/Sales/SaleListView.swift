@@ -8,7 +8,7 @@ import SwiftUI
 struct SaleListView: View {
     @State private var viewModel: SaleListViewModel
 
-    init(records: any ERPReading) {
+    init(records: any SaleProviding) {
         _viewModel = State(initialValue: SaleListViewModel(records: records))
     }
 
@@ -20,7 +20,15 @@ struct SaleListView: View {
             state: viewModel.state,
             retry: { Task { await viewModel.load() } }
         ) {
-            ForEach(viewModel.sales) { sale in
+            TextField("Search sales", text: $viewModel.query)
+                .textInputAutocapitalization(.never)
+                .accessibilityLabel("Search sales")
+                .accessibilityIdentifier("sales.search")
+            if viewModel.filteredSales.isEmpty {
+                Text("No sales match this search.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(viewModel.filteredSales) { sale in
                 NavigationLink {
                     SaleDetailView(sale: sale)
                 } label: {
@@ -97,7 +105,7 @@ struct SaleDetailView: View {
 struct InvoiceListView: View {
     @State private var viewModel: InvoiceListViewModel
 
-    init(records: any ERPReading) {
+    init(records: any InvoiceProviding) {
         _viewModel = State(initialValue: InvoiceListViewModel(records: records))
     }
 
@@ -109,7 +117,15 @@ struct InvoiceListView: View {
             state: viewModel.state,
             retry: { Task { await viewModel.load() } }
         ) {
-            ForEach(viewModel.invoices) { invoice in
+            TextField("Search invoices", text: $viewModel.query)
+                .textInputAutocapitalization(.never)
+                .accessibilityLabel("Search invoices")
+                .accessibilityIdentifier("invoices.search")
+            if viewModel.filteredInvoices.isEmpty {
+                Text("No invoices match this search.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(viewModel.filteredInvoices) { invoice in
                 NavigationLink {
                     InvoiceDetailView(
                         invoice: invoice,

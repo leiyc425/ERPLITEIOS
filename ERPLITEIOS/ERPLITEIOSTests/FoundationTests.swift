@@ -15,11 +15,7 @@ struct DashboardViewModelTests {
         let viewModel = DashboardViewModel(
             session: session,
             configuration: configuration,
-            records: MockERPReader(catalog: .sample),
-            health: LiveHealthCheck(
-                configuration: configuration,
-                client: URLSessionHTTPClient(configuration: configuration, authorizer: PendingContractAuthorizer())
-            )
+            records: MockERPReader(catalog: .sample)
         )
 
         #expect(viewModel.showsMockBanner)

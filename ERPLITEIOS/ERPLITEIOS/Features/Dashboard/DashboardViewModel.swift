@@ -17,24 +17,19 @@ struct DashboardModule: Identifiable, Equatable {
 final class DashboardViewModel {
     var session: Session
     var configuration: AppConfiguration
-    private let records: any ERPReading
-    private let health: any HealthChecking
+    private let records: any DashboardProviding
 
     private(set) var state: ResourceLoadState = .idle
     private(set) var catalog: ERPCatalog?
-    private(set) var healthMessage: String?
-    private(set) var isCheckingHealth = false
 
     init(
         session: Session,
         configuration: AppConfiguration,
-        records: any ERPReading,
-        health: any HealthChecking
+        records: any DashboardProviding
     ) {
         self.session = session
         self.configuration = configuration
         self.records = records
-        self.health = health
     }
 
     var showsMockBanner: Bool {
@@ -50,16 +45,13 @@ final class DashboardViewModel {
 
     var backendTitle: String {
         if configuration.baseURL == nil {
-            return "Backend URL not set"
+            return "Launch URL not set"
         }
-        return "Base URL configured"
+        return "Launch URL configured"
     }
 
     var backendDetail: String {
-        if let baseURL = configuration.baseURL {
-            return "\(baseURL.absoluteString) can receive GET /health/ only. Client, inventory, and sale lists are still mock samples."
-        }
-        return "No base URL is set, so GET /health/ is not sent. Client, inventory, and sale lists are mock samples."
+        "Business lists are mock samples. Settings can send GET /health/ when a base URL is saved. A successful health check does not enable those lists."
     }
 
     var modules: [DashboardModule] {
@@ -96,31 +88,31 @@ final class DashboardViewModel {
     var soldCount: Int { catalog?.inventory.filter { $0.status == .sold }.count ?? 0 }
     var clientCount: Int { catalog?.clients.count ?? 0 }
     var saleCount: Int { catalog?.sales.count ?? 0 }
-    var outstanding: Decimal {
-        catalog?.sales.reduce(Decimal.zero) { $0 + $1.outstandingBalance } ?? .zero
+    var unpaidSaleCount: Int { catalog?.sales.filter { $0.paymentStatus == .unpaid }.count ?? 0 }
+    var issuedBalanceDue: Decimal {
+        guard let catalog else { return .zero }
+        return catalog.invoices.reduce(Decimal.zero) { partial, invoice in
+            guard invoice.status == .issued else { return partial }
+            let paid = catalog.sales.first { $0.id == invoice.saleID }?.amountPaid ?? .zero
+            return partial + (invoice.balanceDue(amountPaidOnSale: paid) ?? .zero)
+        }
     }
+
+    var skuAvailable: Int { catalog?.skus.reduce(0) { $0 + $1.available } ?? 0 }
 
     func load() async {
         state = .loading
         do {
-            catalog = try await records.loadCatalog()
-            state = .loaded
+            let loaded = try await records.loadDashboard()
+            catalog = loaded
+            let isEmpty = loaded.inventory.isEmpty
+                && loaded.skus.isEmpty
+                && loaded.clients.isEmpty
+                && loaded.sales.isEmpty
+                && loaded.invoices.isEmpty
+            state = isEmpty ? .empty : .loaded
         } catch {
             state = .failed((error as? LocalizedError)?.errorDescription ?? "The dashboard could not be loaded.")
-        }
-    }
-
-    func checkHealth() async {
-        guard !isCheckingHealth else { return }
-        isCheckingHealth = true
-        defer { isCheckingHealth = false }
-        do {
-            let report = try await health.check()
-            healthMessage = "\(report.status.status) · database \(report.status.database) · \(report.origin.rawValue)"
-        } catch APIError.backendNotConfigured {
-            healthMessage = "No base URL. GET /health/ was not sent."
-        } catch {
-            healthMessage = (error as? LocalizedError)?.errorDescription ?? "The health check failed."
         }
     }
 }
