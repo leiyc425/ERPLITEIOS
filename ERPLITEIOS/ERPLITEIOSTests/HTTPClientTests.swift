@@ -15,7 +15,7 @@ struct HTTPClientTests {
 
         let client = URLSessionHTTPClient(
             configuration: .mockDefault,
-            session: StubURLProtocol.makeSession(),
+            protocolClasses: [StubURLProtocol.self],
             authorizer: PendingContractAuthorizer()
         )
 
@@ -36,7 +36,7 @@ struct HTTPClientTests {
         let configuration = configuredExample()
         let client = URLSessionHTTPClient(
             configuration: configuration,
-            session: StubURLProtocol.makeSession(),
+            protocolClasses: [StubURLProtocol.self],
             authorizer: PendingContractAuthorizer()
         )
 
@@ -54,7 +54,7 @@ struct HTTPClientTests {
 
         let client = URLSessionHTTPClient(
             configuration: configuredExample(),
-            session: StubURLProtocol.makeSession(),
+            protocolClasses: [StubURLProtocol.self],
             authorizer: PendingContractAuthorizer()
         )
         await #expect(throws: APIError.timedOut) {
@@ -82,7 +82,7 @@ struct HTTPClientTests {
 
         let client = URLSessionHTTPClient(
             configuration: configuredExample(),
-            session: StubURLProtocol.makeSession(),
+            protocolClasses: [StubURLProtocol.self],
             authorizer: HeaderSpyAuthorizer()
         )
         let probe = try await client.send(
@@ -103,7 +103,7 @@ struct HTTPClientTests {
 
         let client = URLSessionHTTPClient(
             configuration: configuredExample(),
-            session: StubURLProtocol.makeSession(),
+            protocolClasses: [StubURLProtocol.self],
             authorizer: HeaderSpyAuthorizer()
         )
         let response = try await client.send(
@@ -111,6 +111,37 @@ struct HTTPClientTests {
         )
         #expect(response.statusCode == 204)
         #expect(header.value == "attached")
+    }
+
+    @Test func reportsRedirectsAndDropsSensitiveHeaders() async throws {
+        StubURLProtocol.setHandler { _ in
+            StubURLProtocol.Response(
+                status: 302,
+                body: Data(),
+                headers: ["Location": "https://elsewhere.example/login", "Set-Cookie": "session=hidden"]
+            )
+        }
+        defer { StubURLProtocol.setHandler(nil) }
+
+        let client = URLSessionHTTPClient(
+            configuration: configuredExample(),
+            protocolClasses: [StubURLProtocol.self],
+            authorizer: PendingContractAuthorizer()
+        )
+        await #expect(throws: APIError.unacceptableStatus(code: 302)) {
+            try await client.send(HTTPRequest(method: .get, path: "probe"))
+        }
+
+        StubURLProtocol.setHandler { _ in
+            StubURLProtocol.Response(
+                status: 200,
+                body: Data(),
+                headers: ["Set-Cookie": "session=hidden", "X-Request-Id": "abc"]
+            )
+        }
+        let response = try await client.send(HTTPRequest(method: .get, path: "probe"))
+        #expect(response.headers["X-Request-Id"] == "abc")
+        #expect(response.headers.keys.contains { $0.caseInsensitiveCompare("Set-Cookie") == .orderedSame } == false)
     }
 
     private func configuredExample() -> AppConfiguration {

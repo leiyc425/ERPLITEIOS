@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Backend" : {
+
+    },
     "Continue to sign in" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11,6 +14,9 @@
           }
         }
       }
+    },
+    "Contract integrated" : {
+
     },
     "Could not start ERP Lite" : {
       "extractionState" : "manual",
@@ -45,6 +51,9 @@
         }
       }
     },
+    "ERP Lite on the server remains the source of truth for accounts, permissions, and records." : {
+
+    },
     "Flowmagik" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -56,6 +65,18 @@
         }
       }
     },
+    "MOCK" : {
+
+    },
+    "Mock expiry" : {
+
+    },
+    "Modules" : {
+
+    },
+    "No API contract integrated" : {
+
+    },
     "Password" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -66,6 +87,9 @@
           }
         }
       }
+    },
+    "Session" : {
+
     },
     "Sign in" : {
       "extractionState" : "manual",

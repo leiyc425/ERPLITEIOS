@@ -12,18 +12,36 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
     private let versionPrefix: String?
     private let requestTimeout: TimeInterval
     private let session: URLSession
+    private let redirectDelegate: HTTPRedirectDelegate
     private let authorizer: any RequestAuthorizing
 
     init(
         configuration: AppConfiguration,
-        session: URLSession = .shared,
+        protocolClasses: [AnyClass] = [],
         authorizer: any RequestAuthorizing
     ) {
         self.baseURL = configuration.baseURL
         self.versionPrefix = configuration.apiVersionPrefix
         self.requestTimeout = configuration.requestTimeout
-        self.session = session
         self.authorizer = authorizer
+
+        let sessionConfiguration = URLSessionConfiguration.ephemeral
+        sessionConfiguration.timeoutIntervalForRequest = configuration.requestTimeout
+        sessionConfiguration.timeoutIntervalForResource = configuration.requestTimeout
+        sessionConfiguration.waitsForConnectivity = false
+        sessionConfiguration.httpShouldSetCookies = false
+        sessionConfiguration.httpCookieAcceptPolicy = .never
+        if !protocolClasses.isEmpty {
+            sessionConfiguration.protocolClasses = protocolClasses
+        }
+
+        let redirectDelegate = HTTPRedirectDelegate()
+        self.redirectDelegate = redirectDelegate
+        self.session = URLSession(
+            configuration: sessionConfiguration,
+            delegate: redirectDelegate,
+            delegateQueue: nil
+        )
     }
 
     func send(_ request: HTTPRequest) async throws -> HTTPResponse {
@@ -97,12 +115,35 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
         )
     }
 
+    private static let sensitiveHeaders: Set<String> = [
+        "authorization",
+        "cookie",
+        "proxy-authorization",
+        "set-cookie",
+    ]
+
     private static func headerMap(_ response: HTTPURLResponse) -> [String: String] {
         var map: [String: String] = [:]
         for (key, value) in response.allHeaderFields {
             guard let field = key as? String else { continue }
+            if sensitiveHeaders.contains(field.lowercased()) {
+                continue
+            }
             map[field] = String(describing: value)
         }
         return map
+    }
+}
+
+/// Refuses every redirect so a 3xx response cannot move the request to another host.
+final class HTTPRedirectDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
     }
 }

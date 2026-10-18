@@ -73,6 +73,8 @@ There is no catalog of ERP Lite paths. Callers will add paths when a contract ex
 - Maps `URLError.timedOut`, cancellation, non-HTTP responses, HTTP 401, and other status codes into `APIError`
 - Does not keep response bodies on errors
 - Uses an ephemeral session with cookies disabled, so it does not grow an implied Django session
+- Does not follow redirects
+- Omits `Authorization`, `Cookie`, and `Set-Cookie` from the header map returned to callers
 - Calls `RequestAuthorizing` only when a request opts in
 
 `PendingContractAuthorizer` is the live authorizer. It throws `authenticationSchemeNotConfigured` and does not guess Bearer tokens, session cookies, or CSRF.
@@ -90,7 +92,7 @@ JSON encoding uses ISO-8601 dates and does not rewrite keys. That choice is prov
 - Expiry clears the marker and surfaces `sessionExpired`
 - Logout clears the marker
 
-`TokenStoring` hides the keychain. Tests use `InMemoryTokenStore`. The keychain item is a generic password under `com.flowmagik.ERPLITEIOS.session`, accessible after first unlock on this device only.
+`TokenStoring` hides the keychain. Tests use `InMemoryTokenStore`. The keychain item is a generic password under `com.flowmagik.ERPLITEIOS.session`, available only while this device is unlocked, and it is not synced. Replacing a saved marker updates that item in place.
 
 ## Mock versus backend data
 

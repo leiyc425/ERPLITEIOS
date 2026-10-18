@@ -30,14 +30,6 @@ struct AppDependencies {
             )
         }
 
-        let sessionConfiguration = URLSessionConfiguration.ephemeral
-        sessionConfiguration.timeoutIntervalForRequest = configuration.requestTimeout
-        sessionConfiguration.timeoutIntervalForResource = configuration.requestTimeout
-        sessionConfiguration.waitsForConnectivity = false
-        sessionConfiguration.httpShouldSetCookies = false
-        sessionConfiguration.httpCookieAcceptPolicy = .never
-        let session = URLSession(configuration: sessionConfiguration)
-
         let tokenStore = KeychainTokenStore()
         let clock = SystemDateProvider()
         let authService = MockAuthService(
@@ -47,7 +39,6 @@ struct AppDependencies {
         )
         let httpClient = URLSessionHTTPClient(
             configuration: configuration,
-            session: session,
             authorizer: PendingContractAuthorizer()
         )
         return AppDependencies(

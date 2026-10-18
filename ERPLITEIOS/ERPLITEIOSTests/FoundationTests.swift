@@ -54,6 +54,16 @@ struct KeychainTokenStoreTests {
         )
         try store.save(credential)
         #expect(try store.load() == credential)
+
+        let replacement = StoredCredential(
+            secret: "mock-session-replaced",
+            accountLabel: "Grace",
+            expiresAt: credential.expiresAt,
+            isMock: true
+        )
+        try store.save(replacement)
+        #expect(try store.load() == replacement)
+
         try store.clear()
         #expect(try store.load() == nil)
     }
