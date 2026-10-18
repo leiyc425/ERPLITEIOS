@@ -45,6 +45,22 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
     }
 
     func send(_ request: HTTPRequest) async throws -> HTTPResponse {
+        try await send(request, attempt: 0)
+    }
+
+    /// GET may be sent once more after a timeout or a dropped connection. Other methods are not retried.
+    private func send(_ request: HTTPRequest, attempt: Int) async throws -> HTTPResponse {
+        do {
+            return try await perform(request)
+        } catch let error as APIError {
+            let canRetry = attempt == 0 && request.method == .get && error.retriesGET
+            guard canRetry else { throw error }
+            try Task.checkCancellation()
+            return try await send(request, attempt: 1)
+        }
+    }
+
+    private func perform(_ request: HTTPRequest) async throws -> HTTPResponse {
         guard let baseURL = request.baseURLOverride ?? baseURL else {
             throw APIError.backendNotConfigured
         }
@@ -83,20 +99,13 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
         do {
             (data, response) = try await session.data(for: urlRequest)
         } catch let error as URLError {
-            switch error.code {
-            case .timedOut:
-                throw APIError.timedOut
-            case .cancelled:
-                throw APIError.cancelled
-            default:
-                throw APIError.transport(error.localizedDescription)
-            }
+            throw APIError.classified(error)
         } catch is CancellationError {
             throw APIError.cancelled
         } catch let error as APIError {
             throw error
         } catch {
-            throw APIError.transport(error.localizedDescription)
+            throw APIError.transport("")
         }
 
         guard let http = response as? HTTPURLResponse else {

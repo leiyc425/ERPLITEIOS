@@ -6,17 +6,16 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @Binding var tab: AppTab
+    var shell: AppShellState
     @State private var viewModel: DashboardViewModel
     private let signOut: () async -> Void
 
     init(
-        tab: Binding<AppTab>,
         session: Session,
         dependencies: AppDependencies,
         signOut: @escaping () async -> Void
     ) {
-        _tab = tab
+        shell = dependencies.shell
         self.signOut = signOut
         _viewModel = State(
             initialValue: DashboardViewModel(
@@ -89,7 +88,7 @@ struct DashboardView: View {
             Section("Open") {
                 ForEach(viewModel.modules) { module in
                     Button {
-                        tab = AppTab(moduleID: module.id)
+                        shell.tab = AppTab(moduleID: module.id)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {

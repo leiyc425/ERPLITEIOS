@@ -24,17 +24,26 @@ enum AppTab: Hashable {
     }
 }
 
+@Observable
+final class AppShellState {
+    var tab: AppTab = .dashboard
+    private(set) var generation: Int = 0
+
+    func reset() {
+        tab = .dashboard
+        generation += 1
+    }
+}
+
 struct AppShellView: View {
     var session: Session
     var dependencies: AppDependencies
     var signOut: () async -> Void
-    @State private var tab: AppTab = .dashboard
 
     var body: some View {
-        TabView(selection: $tab) {
+        TabView(selection: Bindable(dependencies.shell).tab) {
             NavigationStack {
                 DashboardView(
-                    tab: $tab,
                     session: session,
                     dependencies: dependencies,
                     signOut: signOut
@@ -73,6 +82,7 @@ struct AppShellView: View {
             .tabItem { Label("Settings", systemImage: "gearshape") }
             .tag(AppTab.settings)
         }
+        .id(dependencies.shell.generation)
         .accessibilityIdentifier("app.tabs")
     }
 }

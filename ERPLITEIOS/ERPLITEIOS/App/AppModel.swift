@@ -62,11 +62,13 @@ final class AppModel {
 
     func signOut() async {
         await dependencies.authService.logout()
+        endProtectedUse()
         phase = .signedOut
     }
 
     func discardSavedSession() async {
         try? dependencies.tokenStore.clear()
+        endProtectedUse()
         phase = .signedOut
     }
 
@@ -77,16 +79,23 @@ final class AppModel {
     }
     #endif
 
+    private func endProtectedUse() {
+        dependencies.shell.reset()
+        dependencies.readCache.invalidateAll()
+    }
+
     private func restoreAuthenticatedSession() async {
         do {
             if let session = try await dependencies.authService.restoreSession() {
                 phase = .authenticated(session)
             } else if case .authenticated = phase {
+                endProtectedUse()
                 phase = .signedOut
             } else if case .launching = phase {
                 phase = .signedOut
             }
         } catch AuthError.sessionExpired {
+            endProtectedUse()
             phase = .sessionExpired
         } catch {
             phase = .failed(

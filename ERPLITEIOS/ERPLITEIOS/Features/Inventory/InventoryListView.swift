@@ -36,16 +36,21 @@ struct InventoryListView: View {
                         Text(sort.label).tag(sort)
                     }
                 }
+                if viewModel.unitsAreFiltered {
+                    Button("Reset unit filters") { viewModel.resetUnits() }
+                        .accessibilityIdentifier("inventory.resetUnits")
+                }
                 if viewModel.filteredUnits.isEmpty {
                     Text("No physical units match this search.")
                         .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("inventory.unitsNoMatch")
                 }
                 ForEach(viewModel.filteredUnits) { item in
                         NavigationLink {
                             InventoryDetailView(item: item)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(item.name)
+                                Text(RecordTitle.name(item.name))
                                 Text("\(item.inventoryNumber) · \(item.status.label)")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
@@ -69,16 +74,21 @@ struct InventoryListView: View {
                         Text(sort.label).tag(sort)
                     }
                 }
+                if viewModel.skusAreFiltered {
+                    Button("Reset SKU filters") { viewModel.resetSKUs() }
+                        .accessibilityIdentifier("inventory.resetSKUs")
+                }
                 if viewModel.filteredSKUs.isEmpty {
                     Text("No SKUs match this search.")
                         .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("inventory.skusNoMatch")
                 }
                 ForEach(viewModel.filteredSKUs) { sku in
                     NavigationLink {
                         SKUDetailView(product: sku)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(sku.name)
+                            Text(RecordTitle.name(sku.name))
                             Text("\(sku.sku) · \(sku.available) available")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)

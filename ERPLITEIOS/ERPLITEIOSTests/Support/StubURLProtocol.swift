@@ -41,10 +41,12 @@ final class HeaderBox: @unchecked Sendable {
 final class RequestFlag: @unchecked Sendable {
     private let lock = NSLock()
     private var value = false
+    private var hits = 0
 
     func mark() {
         lock.lock()
         value = true
+        hits += 1
         lock.unlock()
     }
 
@@ -52,6 +54,12 @@ final class RequestFlag: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return value
+    }
+
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return hits
     }
 }
 

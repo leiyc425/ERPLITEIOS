@@ -11,23 +11,61 @@ final class SettingsViewModel {
     private let health: any HealthChecking
     private(set) var healthMessage: String?
     private(set) var isCheckingHealth = false
+    private var checkGeneration = 0
 
     init(connection: ConnectionSettings, health: any HealthChecking) {
         self.connection = connection
         self.health = health
     }
 
+    func invalidateHealthResult() {
+        checkGeneration += 1
+        healthMessage = nil
+        isCheckingHealth = false
+    }
+
     func checkHealth() async {
         guard !isCheckingHealth else { return }
+        checkGeneration += 1
+        let generation = checkGeneration
         isCheckingHealth = true
-        defer { isCheckingHealth = false }
+        defer {
+            if generation == checkGeneration {
+                isCheckingHealth = false
+            }
+        }
         do {
             let report = try await health.check()
+            guard generation == checkGeneration else { return }
             healthMessage = "\(report.status.status) · database \(report.status.database). Business lists stay on mock data."
-        } catch APIError.backendNotConfigured {
-            healthMessage = "No base URL. GET /health/ was not sent."
         } catch {
-            healthMessage = (error as? LocalizedError)?.errorDescription ?? "The health check failed."
+            guard generation == checkGeneration else { return }
+            healthMessage = Self.diagnostic(for: error)
+        }
+    }
+
+    static func diagnostic(for error: Error) -> String {
+        switch error as? APIError {
+        case .backendNotConfigured:
+            return "No base URL. GET /health/ was not sent."
+        case .timedOut:
+            return "The health check timed out."
+        case .cancelled:
+            return "The health check was cancelled."
+        case .offline:
+            return "The device appears to be offline."
+        case .cannotReachHost:
+            return "The server could not be reached."
+        case .secureConnectionFailed:
+            return "The secure connection failed. No cleartext exception was added."
+        case .unacceptableStatus(let code):
+            return "The server returned HTTP \(code). Business lists stay on mock data."
+        case .decodingFailed:
+            return "The health response was not valid JSON."
+        case .invalidRequestURL:
+            return "The health URL could not be built."
+        default:
+            return "The health check failed."
         }
     }
 }
@@ -102,6 +140,7 @@ struct SettingsView: View {
                 if let healthMessage = viewModel.healthMessage {
                     Text(healthMessage)
                         .font(.footnote)
+                        .accessibilityLabel(healthMessage)
                         .accessibilityIdentifier("settings.healthResult")
                 }
             }
@@ -121,6 +160,9 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .accessibilityIdentifier("settings.root")
+        .onChange(of: viewModel.connection.revision) {
+            viewModel.invalidateHealthResult()
+        }
     }
 }
 

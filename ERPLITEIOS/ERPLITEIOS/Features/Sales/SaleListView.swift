@@ -24,9 +24,14 @@ struct SaleListView: View {
                 .textInputAutocapitalization(.never)
                 .accessibilityLabel("Search sales")
                 .accessibilityIdentifier("sales.search")
+            if viewModel.isFiltered {
+                Button("Reset search") { viewModel.resetQuery() }
+                    .accessibilityIdentifier("sales.reset")
+            }
             if viewModel.filteredSales.isEmpty {
                 Text("No sales match this search.")
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("sales.noMatch")
             }
             ForEach(viewModel.filteredSales) { sale in
                 NavigationLink {
@@ -121,9 +126,14 @@ struct InvoiceListView: View {
                 .textInputAutocapitalization(.never)
                 .accessibilityLabel("Search invoices")
                 .accessibilityIdentifier("invoices.search")
+            if viewModel.isFiltered {
+                Button("Reset search") { viewModel.resetQuery() }
+                    .accessibilityIdentifier("invoices.reset")
+            }
             if viewModel.filteredInvoices.isEmpty {
                 Text("No invoices match this search.")
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("invoices.noMatch")
             }
             ForEach(viewModel.filteredInvoices) { invoice in
                 NavigationLink {

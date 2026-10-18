@@ -24,16 +24,21 @@ struct ClientListView: View {
                 .textInputAutocapitalization(.never)
                 .accessibilityLabel("Search clients")
                 .accessibilityIdentifier("clients.search")
+            if viewModel.isFiltered {
+                Button("Reset search") { viewModel.resetQuery() }
+                    .accessibilityIdentifier("clients.reset")
+            }
             if viewModel.filteredClients.isEmpty {
                 Text("No clients match this search.")
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("clients.noMatch")
             }
             ForEach(viewModel.filteredClients) { client in
                 NavigationLink {
                     ClientDetailView(client: client)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(client.name)
+                        Text(RecordTitle.name(client.name))
                         Text("\(client.clientNumber) · \(client.clientType.label)\(client.isActive ? "" : " · Inactive")")
                             .font(.footnote)
                             .foregroundStyle(.secondary)

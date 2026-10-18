@@ -60,6 +60,9 @@ struct CatalogFailure: Error, Equatable, LocalizedError {
 }
 
 struct MockERPReader: ERPProviding {
+    /// Sample records stay in the process that built them. They are not written to the read cache or to disk.
+    static let cachePolicy = ReadCachePolicy.bypass
+
     var catalog: ERPCatalog
     var failure: CatalogFailure?
 

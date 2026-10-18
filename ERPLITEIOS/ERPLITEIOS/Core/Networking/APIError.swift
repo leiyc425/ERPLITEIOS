@@ -12,6 +12,9 @@ enum APIError: Error, Equatable, LocalizedError {
     case invalidRequestURL
     case timedOut
     case cancelled
+    case offline
+    case cannotReachHost
+    case secureConnectionFailed
     case transport(String)
     case unacceptableStatus(code: Int)
     case decodingFailed
@@ -29,8 +32,14 @@ enum APIError: Error, Equatable, LocalizedError {
             return "The request timed out."
         case .cancelled:
             return "The request was cancelled."
-        case .transport(let description):
-            return description
+        case .offline:
+            return "The device appears to be offline."
+        case .cannotReachHost:
+            return "The server could not be reached."
+        case .secureConnectionFailed:
+            return "The secure connection failed."
+        case .transport:
+            return "The connection failed."
         case .unacceptableStatus(let code):
             return "The server returned HTTP \(code)."
         case .decodingFailed:
@@ -41,6 +50,33 @@ enum APIError: Error, Equatable, LocalizedError {
             return "The request was rejected as unauthenticated."
         case .authenticationSchemeNotConfigured:
             return "ERP Lite has not published an authentication scheme, so credentials were not attached."
+        }
+    }
+
+    /// Maps a URL loading error to a message that does not include the host or the raw system text.
+    static func classified(_ error: URLError) -> APIError {
+        switch error.code {
+        case .timedOut:
+            return .timedOut
+        case .cancelled:
+            return .cancelled
+        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+            return .offline
+        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+            return .cannotReachHost
+        case .secureConnectionFailed, .serverCertificateUntrusted, .clientCertificateRejected, .appTransportSecurityRequiresSecureConnection:
+            return .secureConnectionFailed
+        default:
+            return .transport("")
+        }
+    }
+
+    var retriesGET: Bool {
+        switch self {
+        case .timedOut, .offline, .cannotReachHost:
+            return true
+        default:
+            return false
         }
     }
 }

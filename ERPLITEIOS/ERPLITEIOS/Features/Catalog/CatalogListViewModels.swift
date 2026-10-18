@@ -102,9 +102,15 @@ enum InventoryBrowser {
             case .number:
                 return lhs.inventoryNumber.localizedStandardCompare(rhs.inventoryNumber) == .orderedAscending
             case .name:
-                return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                if lhs.name.localizedStandardCompare(rhs.name) != .orderedSame {
+                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                }
+                return lhs.inventoryNumber.localizedStandardCompare(rhs.inventoryNumber) == .orderedAscending
             case .status:
-                return lhs.status.label.localizedStandardCompare(rhs.status.label) == .orderedAscending
+                if lhs.status.label.localizedStandardCompare(rhs.status.label) != .orderedSame {
+                    return lhs.status.label.localizedStandardCompare(rhs.status.label) == .orderedAscending
+                }
+                return lhs.inventoryNumber.localizedStandardCompare(rhs.inventoryNumber) == .orderedAscending
             }
         }
     }
@@ -133,11 +139,24 @@ enum InventoryBrowser {
             case .code:
                 return lhs.sku.localizedStandardCompare(rhs.sku) == .orderedAscending
             case .name:
-                return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                if lhs.name.localizedStandardCompare(rhs.name) != .orderedSame {
+                    return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                }
+                return lhs.sku.localizedStandardCompare(rhs.sku) == .orderedAscending
             case .available:
-                return lhs.available > rhs.available
+                if lhs.available != rhs.available {
+                    return lhs.available > rhs.available
+                }
+                return lhs.sku.localizedStandardCompare(rhs.sku) == .orderedAscending
             }
         }
+    }
+}
+
+enum RecordTitle {
+    static func name(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Untitled record" : trimmed
     }
 }
 
@@ -175,7 +194,32 @@ final class InventoryListViewModel {
         InventoryBrowser.skus(skus, query: skuQuery, availability: skuAvailability, sort: skuSort)
     }
 
+    var unitsAreFiltered: Bool {
+        !unitQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || unitStatus != .all
+            || unitSort != .number
+    }
+
+    var skusAreFiltered: Bool {
+        !skuQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || skuAvailability != .all
+            || skuSort != .code
+    }
+
+    func resetUnits() {
+        unitQuery = ""
+        unitStatus = .all
+        unitSort = .number
+    }
+
+    func resetSKUs() {
+        skuQuery = ""
+        skuAvailability = .all
+        skuSort = .code
+    }
+
     func load() async {
+        guard state == .idle || state.isFailed else { return }
         await loadCatalog { snapshot in
             items = snapshot.units
             skus = snapshot.skus
@@ -212,7 +256,16 @@ final class ClientListViewModel {
         }
     }
 
+    var isFiltered: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func resetQuery() {
+        query = ""
+    }
+
     func load() async {
+        guard state == .idle || state.isFailed else { return }
         state = .loading
         do {
             let snapshot = try await records.loadClients()
@@ -246,7 +299,16 @@ final class SaleListViewModel {
         }
     }
 
+    var isFiltered: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func resetQuery() {
+        query = ""
+    }
+
     func load() async {
+        guard state == .idle || state.isFailed else { return }
         state = .loading
         do {
             let snapshot = try await records.loadSales()
@@ -281,7 +343,16 @@ final class InvoiceListViewModel {
         }
     }
 
+    var isFiltered: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func resetQuery() {
+        query = ""
+    }
+
     func load() async {
+        guard state == .idle || state.isFailed else { return }
         state = .loading
         do {
             let snapshot = try await records.loadInvoices()

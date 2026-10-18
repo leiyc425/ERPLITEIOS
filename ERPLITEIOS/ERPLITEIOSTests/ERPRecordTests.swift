@@ -137,6 +137,119 @@ struct CatalogListViewModelTests {
         let person = ERPCatalog.sample.clients.first { $0.clientNumber == "0002" }
         #expect(person?.billingProfile == nil)
     }
+
+    @Test func searchNoMatchStaysDistinctFromAnEmptyList() async {
+        let empty = ClientListViewModel(records: MockERPReader(catalog: .empty))
+        await empty.load()
+        #expect(empty.state == .empty)
+
+        let loaded = ClientListViewModel(records: MockERPReader(catalog: .sample))
+        await loaded.load()
+        loaded.query = "zzzz-no-client"
+        #expect(loaded.state == .loaded)
+        #expect(loaded.filteredClients.isEmpty)
+        loaded.resetQuery()
+        #expect(loaded.filteredClients.count == 2)
+        loaded.query = "Sample"
+        await loaded.load()
+        #expect(loaded.query == "Sample")
+        #expect(loaded.state == .loaded)
+    }
+
+    @Test func sortingBreaksTiesByIdentifier() {
+        let units = [
+            InventoryItemRecord(
+                id: 2, inventoryNumber: "0002", externalInventoryNumber: "", name: "Same",
+                specification: "", acquiredDate: "2026-01-01", purchaseCost: .zero,
+                status: .inStock, purchaseSource: "", vendorName: nil, notes: ""
+            ),
+            InventoryItemRecord(
+                id: 1, inventoryNumber: "0001", externalInventoryNumber: "", name: "Same",
+                specification: "", acquiredDate: "2026-01-01", purchaseCost: .zero,
+                status: .inStock, purchaseSource: "", vendorName: nil, notes: ""
+            ),
+        ]
+        let byName = InventoryBrowser.units(units, query: "", status: .all, sort: .name)
+        let byStatus = InventoryBrowser.units(units, query: "", status: .all, sort: .status)
+        #expect(byName.map(\.inventoryNumber) == ["0001", "0002"])
+        #expect(byStatus.map(\.inventoryNumber) == ["0001", "0002"])
+        #expect(RecordTitle.name("  ") == "Untitled record")
+    }
+}
+
+@MainActor
+struct ReadCacheTests {
+    @Test func bypassDoesNotStoreAndMemoryEntriesExpireByAccount() async throws {
+        let cache = ProtectedMemoryCache()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let bypass = try await ReadThrough.load(
+            policy: .bypass,
+            cache: cache,
+            key: "clients",
+            accountLabel: "ada",
+            now: now
+        ) { "mock" }
+        #expect(bypass == "mock")
+        #expect(cache.isEmpty)
+        #expect(MockERPReader.cachePolicy == .bypass)
+
+        var fetches = 0
+        let policy = ReadCachePolicy.memoryOnly(freshFor: 30)
+        let first = try await ReadThrough.load(
+            policy: policy, cache: cache, key: "clients", accountLabel: "ada", now: now
+        ) {
+            fetches += 1
+            return "ada-row"
+        }
+        let second = try await ReadThrough.load(
+            policy: policy, cache: cache, key: "clients", accountLabel: "ada", now: now.addingTimeInterval(10)
+        ) {
+            fetches += 1
+            return "other"
+        }
+        #expect(first == "ada-row")
+        #expect(second == "ada-row")
+        #expect(fetches == 1)
+
+        let otherAccount = try await ReadThrough.load(
+            policy: policy, cache: cache, key: "clients", accountLabel: "grace", now: now
+        ) {
+            fetches += 1
+            return "grace-row"
+        }
+        #expect(otherAccount == "grace-row")
+
+        let stale = try await ReadThrough.load(
+            policy: policy, cache: cache, key: "clients", accountLabel: "ada", now: now.addingTimeInterval(31)
+        ) {
+            fetches += 1
+            return "fresh"
+        }
+        #expect(stale == "fresh")
+        cache.invalidateAll()
+        #expect(cache.isEmpty)
+    }
+
+    @Test func healthDiagnosticsDoNotEchoTransportText() async {
+        let settings = ConnectionSettings(bundled: .mockDefault, store: MemoryEndpointStore())
+        let viewModel = SettingsViewModel(
+            connection: settings,
+            health: LiveHealthCheck(
+                configuration: .mockDefault,
+                client: URLSessionHTTPClient(configuration: .mockDefault, authorizer: PendingContractAuthorizer())
+            )
+        )
+        await viewModel.checkHealth()
+        #expect(viewModel.healthMessage == "No base URL. GET /health/ was not sent.")
+        settings.draft = "https://example.com"
+        settings.saveDraft()
+        viewModel.invalidateHealthResult()
+        #expect(viewModel.healthMessage == nil)
+        #expect(settings.revision == 1)
+        let leaked = SettingsViewModel.diagnostic(for: APIError.transport("https://secret.example Authorization"))
+        #expect(leaked == "The health check failed.")
+        #expect(SettingsViewModel.diagnostic(for: APIError.decodingFailed) == "The health response was not valid JSON.")
+    }
 }
 
 @MainActor

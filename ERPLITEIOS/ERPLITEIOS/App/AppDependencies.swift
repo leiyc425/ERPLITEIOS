@@ -15,6 +15,8 @@ struct AppDependencies {
     var records: any ERPProviding
     var health: any HealthChecking
     var connection: ConnectionSettings
+    var shell: AppShellState = AppShellState()
+    var readCache: ProtectedMemoryCache = ProtectedMemoryCache()
 
     static func live(
         bundle: Bundle = .main,

@@ -69,6 +69,39 @@ struct HTTPClientTests {
         }
     }
 
+    @Test func getRetriesOnceAfterATimeoutAndPostDoesNot() async throws {
+        let hits = RequestFlag()
+        StubURLProtocol.setHandler { _ in
+            hits.mark()
+            if hits.count == 1 {
+                throw URLError(.timedOut)
+            }
+            return StubURLProtocol.Response(status: 200, body: Data("{}".utf8), headers: [:])
+        }
+        defer { StubURLProtocol.setHandler(nil) }
+
+        let client = URLSessionHTTPClient(
+            configuration: configuredExample(),
+            protocolClasses: [StubURLProtocol.self],
+            authorizer: PendingContractAuthorizer()
+        )
+        let response = try await client.send(HTTPRequest(method: .get, path: "status"))
+        #expect(response.statusCode == 200)
+        #expect(hits.count == 2)
+
+        let postHits = RequestFlag()
+        StubURLProtocol.setHandler { _ in
+            postHits.mark()
+            throw URLError(.timedOut)
+        }
+        await #expect(throws: APIError.timedOut) {
+            try await client.send(HTTPRequest(method: .post, path: "status"))
+        }
+        #expect(postHits.count == 1)
+        #expect(APIError.classified(URLError(.appTransportSecurityRequiresSecureConnection)) == .secureConnectionFailed)
+        #expect(APIError.cancelled.retriesGET == false)
+    }
+
     @Test func decodesJSONAndAppliesTheCallerPrefix() async throws {
         let flag = RequestFlag()
         StubURLProtocol.setHandler { request in

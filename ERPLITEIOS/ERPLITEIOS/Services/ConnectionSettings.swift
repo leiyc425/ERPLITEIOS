@@ -52,6 +52,7 @@ final class ConnectionSettings {
     var draft: String
     private(set) var overrideURL: URL?
     private(set) var validationMessage: String?
+    private(set) var revision = 0
 
     init(bundled: AppConfiguration, store: any DevelopmentEndpointStoring) {
         self.bundled = bundled
@@ -94,6 +95,7 @@ final class ConnectionSettings {
             draft = url.absoluteString
             store.save(url.absoluteString)
             validationMessage = nil
+            revision += 1
         case .failure(let error):
             validationMessage = error.localizedDescription
         }
@@ -104,5 +106,6 @@ final class ConnectionSettings {
         draft = ""
         store.save("")
         validationMessage = nil
+        revision += 1
     }
 }

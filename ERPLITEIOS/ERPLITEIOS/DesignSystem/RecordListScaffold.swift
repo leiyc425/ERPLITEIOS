@@ -30,6 +30,7 @@ struct RecordListScaffold<Content: View>: View {
                 } description: {
                     Text(explanation)
                 }
+                .accessibilityIdentifier("list.empty")
             case .loaded:
                 List {
                     Section {

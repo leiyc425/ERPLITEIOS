@@ -46,17 +46,21 @@ The app target isolates code to the main actor by default. `URLSession.data(for:
 
 ## Navigation
 
-`AppModel.phase` is the navigation state:
+`AppModel.phase` decides whether the login screen or the signed-in shell is visible:
 
 | Phase | Screen |
 | --- | --- |
 | `launching` | Loading |
 | `signedOut` | Login |
 | `sessionExpired` | Login, with an expiry notice |
-| `authenticated` | Dashboard inside a `NavigationStack` |
+| `authenticated` | Tab shell |
 | `failed` | Error, with retry. A storage failure can also continue to mock sign-in |
 
-Returning to the foreground re-checks an authenticated mock session and moves to the expiry screen when its local deadline has passed.
+The signed-in shell is a `TabView` with Dashboard, Inventory, Sales, Invoices, Clients, and Settings. Each tab has its own `NavigationStack`, so a detail screen on one tab does not replace the others. Search text and filters live on the list view models. Leaving a detail screen does not reload a list that has already loaded. A second `.task` pass does not clear that search.
+
+`AppShellState` holds the selected tab. Sign-out, session expiry, and discarding a saved session call `reset()`, which returns to Dashboard and bumps a generation value. The shell view uses that generation as its identity, so the next sign-in does not restore the previous tab, search, or detail stack. A cold launch that finds no session does not reset the shell.
+
+Returning to the foreground re-checks an authenticated mock session and moves to the expiry screen when its local deadline has passed. That path also resets the shell.
 
 ## Networking
 
@@ -70,7 +74,9 @@ There is no catalog of ERP Lite paths. Callers will add paths when a contract ex
 
 - Does not send when the base URL is missing
 - Times out from the configured request timeout
-- Maps `URLError.timedOut`, cancellation, non-HTTP responses, HTTP 401, and other status codes into `APIError`
+- Maps timeouts, cancellation, offline, unreachable host, TLS or App Transport Security failures, non-HTTP responses, HTTP 401, and other status codes into `APIError`
+- Uses those names in the UI. It does not pass through the system error text, the host, or response bodies
+- Sends a `GET` one extra time after a timeout, an offline error, or an unreachable host. `POST` and other methods are not retried. HTTP error statuses are not retried. A cancelled call is not retried
 - Does not keep response bodies on errors
 - Uses an ephemeral session with cookies disabled, so it does not grow an implied Django session
 - Does not follow redirects
@@ -99,6 +105,16 @@ JSON encoding uses ISO-8601 dates and does not rewrite keys. That choice is prov
 `DataOrigin.mock` marks sample inventory, SKU balances, clients, sales, and invoices. A health report decoded from `GET /health/` is `DataOrigin.backend`. `AppConfiguration.contractIntegrated` stays false because list screens are not a live API.
 
 Phase 1A records the Django models and the HTML-versus-JSON split in [BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md), [DATA_MODELS.md](DATA_MODELS.md), and [API_CONTRACT.md](API_CONTRACT.md).
+
+## Read cache
+
+`ReadCachePolicy.bypass` is what `MockERPReader` uses. It does not write sample clients, inventory, sales, invoices, or payments anywhere.
+
+`ReadCachePolicy.memoryOnly(freshFor:)` is the opt-in for a future backend reader. `ProtectedMemoryCache` keeps values in process memory, stamped with the account label and the time they were stored. A value is stale when its age reaches `freshFor`. A load for a different account label does not return the stored value. Sign-out and session expiry call `invalidateAll()`.
+
+Nothing in this cache is written to UserDefaults, the keychain, or a file. Do not put ERP business rows on disk until a later phase defines retention and encryption. The development base URL in Settings is not part of this cache. It is only a URL.
+
+A health result shown in Settings is cleared when that URL is saved or cleared, including while a check is still in flight. The check remains `GET /health/` and does not enable business lists.
 
 ## What remains out of scope
 

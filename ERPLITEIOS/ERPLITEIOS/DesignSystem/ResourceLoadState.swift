@@ -11,4 +11,9 @@ enum ResourceLoadState: Equatable {
     case loaded
     case empty
     case failed(String)
+
+    var isFailed: Bool {
+        if case .failed = self { return true }
+        return false
+    }
 }

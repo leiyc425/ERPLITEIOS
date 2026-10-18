@@ -9,6 +9,7 @@ struct AppModelTests {
         await fixture.model.bootstrap()
         #expect(fixture.model.phase == .signedOut)
         #expect(fixture.trap.sendCount == 0)
+        #expect(fixture.model.dependencies.shell.generation == 0)
     }
 
     @Test func signInAndSignOutStayOnTheDevice() async throws {
@@ -24,18 +25,31 @@ struct AppModelTests {
         #expect(fixture.model.phase == .authenticated(expected))
         #expect(fixture.trap.sendCount == 0)
 
+        fixture.model.dependencies.shell.tab = .clients
+        fixture.model.dependencies.readCache.store(
+            "sample",
+            key: "clients",
+            accountLabel: "ada",
+            at: fixture.clock.date
+        )
         await fixture.model.signOut()
         #expect(fixture.model.phase == .signedOut)
         #expect(try fixture.store.load() == nil)
+        #expect(fixture.model.dependencies.shell.tab == .dashboard)
+        #expect(fixture.model.dependencies.shell.generation == 1)
+        #expect(fixture.model.dependencies.readCache.isEmpty)
     }
 
     @Test func refreshExpiresAnOldMockSession() async throws {
         let fixture = Fixture()
         await fixture.model.bootstrap()
         try await fixture.model.signIn(username: "ada", password: "secret")
+        fixture.model.dependencies.shell.tab = .sales
         fixture.clock.advance(by: 61)
         await fixture.model.refreshSessionIfNeeded()
         #expect(fixture.model.phase == .sessionExpired)
+        #expect(fixture.model.dependencies.shell.tab == .dashboard)
+        #expect(fixture.model.dependencies.shell.generation == 1)
     }
 
     @Test func bootstrapReportsAnExpiredStoredSession() async throws {

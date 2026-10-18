@@ -23,7 +23,7 @@ xcodebuild \
   test
 ```
 
-Unit tests cover configuration, URL joining, the HTTP client (against an in-process `URLProtocol` stub), mock sign-in, session expiry, and the keychain store. `AppFlowUITests` signs in with mock credentials, checks the mock banner, and signs out.
+Unit tests cover configuration, URL joining, the HTTP client (against an in-process `URLProtocol` stub), GET retry, health diagnostics, mock sign-in, session expiry, shell reset, search and sorting, the in-memory read cache, and the keychain store. `AppFlowUITests` signs in with mock credentials, opens Inventory from the dashboard, returns by tab, and signs out.
 
 A build for the simulator without tests:
 
@@ -37,7 +37,7 @@ xcodebuild \
 
 ## Run the shell
 
-The app opens on a mock sign-in screen. Any non-empty username and password is accepted on the device. The password is not sent anywhere. After sign-in, tabs open Dashboard, Inventory, Sales, Invoices, Clients, and Settings. Those business screens use mock samples labeled MOCK. Invoice totals are stored samples. The app does not calculate tax. Settings can save a development base URL and send `GET /health/`. That check does not enable business lists. The saved value is a URL, not a token.
+The app opens on a mock sign-in screen. Any non-empty username and password is accepted on the device. The password is not sent anywhere. After sign-in, tabs open Dashboard, Inventory, Sales, Invoices, Clients, and Settings. Each tab keeps its own navigation stack. Search and filters stay put while you open a detail screen. Sign-out returns the shell to Dashboard and drops in-memory cache entries. Those business screens use mock samples labeled MOCK. Invoice totals are stored samples. The app does not calculate tax and does not save business rows to disk. Settings can save a development base URL and send `GET /health/`. Saving or clearing that URL drops the previous health result. A successful check does not enable business lists. The saved value is a URL, not a token.
 
 Launch arguments:
 
