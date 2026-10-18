@@ -33,6 +33,38 @@ struct ERPRecordTests {
         #expect(partial.fulfillment == .partiallyDelivered)
         #expect(partial.outstandingBalance == Decimal(string: "15.00"))
         #expect(partial.paymentStatusLabel == "Partially Paid")
+
+        let skuSale = try #require(catalog.sales.first { $0.saleNumber == "0004" })
+        let skuLine = try #require(skuSale.lines.first)
+        #expect(skuLine.skuProductID != nil)
+        #expect(skuLine.inventoryItemID == nil)
+        #expect(skuLine.fulfillment == .partiallyDelivered)
+        #expect(skuSale.fulfillment == .partiallyDelivered)
+        #expect(skuSale.total == Decimal(string: "40.00"))
+        #expect(skuSale.amountDue == Decimal(string: "45.20"))
+        #expect(skuSale.outstandingBalance == Decimal(string: "45.20"))
+        #expect(skuSale.paymentStatus == .unpaid)
+    }
+
+    @Test func sampleInvoicesFollowFrozenTotals() throws {
+        let catalog = ERPCatalog.sample
+        #expect(catalog.invoices.allSatisfy { Money.cad($0.subtotal + $0.taxTotal) == $0.grandTotal })
+
+        let draft = try #require(catalog.invoices.first { $0.status == .draft })
+        #expect(draft.invoiceNumber == nil)
+        #expect(draft.balanceDue(amountPaidOnSale: 10) == nil)
+
+        let issued = try #require(catalog.invoices.first { $0.invoiceNumber == "FM-2601001" })
+        #expect(issued.balanceDue(amountPaidOnSale: Decimal(string: "40.00") ?? 40) == .zero)
+
+        let voided = try #require(catalog.invoices.first { $0.status == .void })
+        let voidedSale = try #require(catalog.sales.first { $0.id == voided.saleID })
+        #expect(voidedSale.issuedInvoiceGrandTotal == nil)
+        #expect(voidedSale.amountDue == voidedSale.total)
+
+        let sku = try #require(catalog.skus.first)
+        #expect(sku.available == 6)
+        #expect(sku.reserved == 2)
     }
 
     @Test func linkedInventoryLinesStayAtQuantityOne() {

@@ -5,101 +5,53 @@
 
 import SwiftUI
 
-enum SaleListPurpose: Equatable {
-    case sales
-    case invoices
-
-    var title: String {
-        switch self {
-        case .sales: "Sales"
-        case .invoices: "Invoices"
-        }
-    }
-
-    var explanation: String {
-        switch self {
-        case .sales:
-            "ERP Lite has no separate order model. A Sale is the business transaction."
-        case .invoices:
-            "A Sale is the invoice header. This list is the same Sale records, not a second document type."
-        }
-    }
-
-    var identifier: String {
-        switch self {
-        case .sales: "sales.list"
-        case .invoices: "invoices.list"
-        }
-    }
-}
-
 struct SaleListView: View {
     @State private var viewModel: SaleListViewModel
-    private let purpose: SaleListPurpose
 
-    init(records: any ERPReading, purpose: SaleListPurpose) {
-        self.purpose = purpose
+    init(records: any ERPReading) {
         _viewModel = State(initialValue: SaleListViewModel(records: records))
     }
 
     var body: some View {
         RecordListScaffold(
-            title: purpose.title,
-            explanation: purpose.explanation,
+            title: "Sales",
+            explanation: "A Sale is the business transaction. There is no separate order. Billing invoices are a different record.",
             origin: viewModel.origin,
             state: viewModel.state,
             retry: { Task { await viewModel.load() } }
         ) {
             ForEach(viewModel.sales) { sale in
                 NavigationLink {
-                    SaleDetailView(sale: sale, purpose: purpose)
+                    SaleDetailView(sale: sale)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(rowTitle(sale))
-                        Text(rowDetail(sale))
+                        Text("\(sale.saleNumber) · \(sale.clientName)")
+                        Text("\(sale.saleDate) · \(sale.fulfillment.label) · \(sale.saleType.label)")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
         }
-        .accessibilityIdentifier(purpose.identifier)
+        .accessibilityIdentifier("sales.list")
         .task { await viewModel.load() }
-    }
-
-    private func rowTitle(_ sale: SaleRecord) -> String {
-        switch purpose {
-        case .sales:
-            return "\(sale.saleNumber) · \(sale.clientName)"
-        case .invoices:
-            return "\(sale.saleNumber) · \(sale.invoiceLabel)"
-        }
-    }
-
-    private func rowDetail(_ sale: SaleRecord) -> String {
-        switch purpose {
-        case .sales:
-            return "\(sale.saleDate) · \(sale.fulfillment.label) · \(sale.saleType.label)"
-        case .invoices:
-            return "\(sale.clientName) · \(sale.paymentStatusLabel) · \(Money.label(sale.outstandingBalance)) outstanding"
-        }
     }
 }
 
 struct SaleDetailView: View {
     var sale: SaleRecord
-    var purpose: SaleListPurpose
 
     var body: some View {
         List {
             LabeledContent("Sale number", value: sale.saleNumber)
-            LabeledContent("External invoice", value: sale.invoiceLabel)
+            LabeledContent("External reference", value: sale.invoiceLabel)
             LabeledContent("Client", value: sale.clientName)
             LabeledContent("Sale date", value: sale.saleDate)
             LabeledContent("Type", value: sale.saleType.label)
             LabeledContent("Fulfillment", value: sale.fulfillment.label)
             LabeledContent("Payment", value: sale.paymentStatusLabel)
-            LabeledContent("Total", value: Money.label(sale.total))
+            LabeledContent("Sale total", value: Money.label(sale.total))
+            LabeledContent("Amount due", value: Money.label(sale.amountDue))
             LabeledContent("Paid", value: Money.label(sale.amountPaid))
             LabeledContent("Outstanding", value: Money.label(sale.outstandingBalance))
 
@@ -107,31 +59,125 @@ struct SaleDetailView: View {
                 ForEach(sale.lines) { line in
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(line.lineNumber). \(line.name)")
-                        Text("\(line.lineType.label) · qty \(line.quantity) · \(line.fulfillmentStatus.label) · \(Money.label(line.lineTotal))")
+                        Text(lineDetail(line))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
 
-            if purpose == .invoices {
-                Section("Payments") {
-                    if sale.payments.isEmpty {
-                        Text("No payments on this sample.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(sale.payments) { payment in
-                            LabeledContent(payment.paymentDate, value: Money.label(payment.amount))
-                        }
+            Section("Payments") {
+                if sale.payments.isEmpty {
+                    Text("No payments on this sample.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(sale.payments) { payment in
+                        LabeledContent(payment.paymentDate, value: Money.label(payment.amount))
                     }
                 }
             }
 
-            Text("Creating, editing, fulfilling, and deleting stay on the server. This screen is read-only.")
+            Text("The external reference classifies the sale. It is not the billing invoice number. Creating, editing, shipping, and paying stay on the server.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .navigationTitle(sale.saleNumber)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func lineDetail(_ line: SaleLineRecord) -> String {
+        var text = "\(line.lineType.label) · qty \(line.quantity) · \(line.fulfillment.label) · \(Money.label(line.lineTotal))"
+        if line.skuProductID != nil {
+            text += " · shipped \(line.shippedQuantity) · cancelled \(line.cancelledQuantity)"
+        }
+        return text
+    }
+}
+
+struct InvoiceListView: View {
+    @State private var viewModel: InvoiceListViewModel
+
+    init(records: any ERPReading) {
+        _viewModel = State(initialValue: InvoiceListViewModel(records: records))
+    }
+
+    var body: some View {
+        RecordListScaffold(
+            title: "Invoices",
+            explanation: "An invoice belongs to one sale. Drafts have no number. Issued and void invoices keep their FM number. Totals shown here are stored samples, not calculated on the device.",
+            origin: viewModel.origin,
+            state: viewModel.state,
+            retry: { Task { await viewModel.load() } }
+        ) {
+            ForEach(viewModel.invoices) { invoice in
+                NavigationLink {
+                    InvoiceDetailView(
+                        invoice: invoice,
+                        amountPaidOnSale: viewModel.amountPaid(for: invoice)
+                    )
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(invoice.numberLabel) · \(invoice.clientName)")
+                        Text("\(invoice.status.label) · sale \(invoice.saleNumber) · \(Money.label(invoice.grandTotal))")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .accessibilityIdentifier("invoices.list")
+        .task { await viewModel.load() }
+    }
+}
+
+struct InvoiceDetailView: View {
+    var invoice: InvoiceRecord
+    var amountPaidOnSale: Decimal
+
+    var body: some View {
+        List {
+            LabeledContent("Status", value: invoice.status.label)
+            LabeledContent("Invoice number", value: invoice.numberLabel)
+            LabeledContent("Sale", value: invoice.saleNumber)
+            LabeledContent("Client", value: invoice.clientName)
+            LabeledContent("Issuer", value: invoice.issuerLegalName)
+            if let issueDate = invoice.issueDate {
+                LabeledContent("Issue date", value: issueDate)
+            }
+            LabeledContent("Subtotal", value: Money.label(invoice.subtotal))
+            LabeledContent("Tax", value: Money.label(invoice.taxTotal))
+            LabeledContent("Grand total", value: Money.label(invoice.grandTotal))
+            if let balance = invoice.balanceDue(amountPaidOnSale: amountPaidOnSale) {
+                LabeledContent("Sale payments", value: Money.label(amountPaidOnSale))
+                LabeledContent("Balance due", value: Money.label(balance))
+            }
+
+            if !invoice.lines.isEmpty {
+                Section("Lines") {
+                    ForEach(invoice.lines) { line in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(line.lineNumber). \(line.name)")
+                            Text(lineCaption(line))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Text("Payments stay on the sale. A void is not a refund. Issuing, voiding, and PDF download stay on the server.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .navigationTitle(invoice.numberLabel)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func lineCaption(_ line: InvoiceLineRecord) -> String {
+        var text = "qty \(line.quantity) · net \(Money.label(line.lineNet)) · tax \(Money.label(line.taxTotal))"
+        if !line.sourceSKUCode.isEmpty {
+            text += " · \(line.sourceSKUCode)"
+        }
+        return text
     }
 }

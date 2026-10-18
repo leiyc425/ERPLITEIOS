@@ -142,9 +142,9 @@ struct DashboardView: View {
         case "clients":
             ClientListView(records: records)
         case "sales":
-            SaleListView(records: records, purpose: .sales)
+            SaleListView(records: records)
         case "invoices":
-            SaleListView(records: records, purpose: .invoices)
+            InvoiceListView(records: records)
         default:
             Text("This module is not available.")
         }

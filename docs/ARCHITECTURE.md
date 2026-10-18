@@ -96,7 +96,7 @@ JSON encoding uses ISO-8601 dates and does not rewrite keys. That choice is prov
 
 ## Mock versus backend data
 
-`DataOrigin.mock` marks sample inventory, clients, and sales. A health report decoded from `GET /health/` is `DataOrigin.backend`. `AppConfiguration.contractIntegrated` stays false because list screens are not a live API.
+`DataOrigin.mock` marks sample inventory, SKU balances, clients, sales, and invoices. A health report decoded from `GET /health/` is `DataOrigin.backend`. `AppConfiguration.contractIntegrated` stays false because list screens are not a live API.
 
 Phase 1A records the Django models and the HTML-versus-JSON split in [BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md), [DATA_MODELS.md](DATA_MODELS.md), and [API_CONTRACT.md](API_CONTRACT.md).
 

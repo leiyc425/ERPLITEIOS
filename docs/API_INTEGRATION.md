@@ -2,7 +2,7 @@
 
 The iOS app is a client of ERP Lite. It is not a second implementation of the ERP.
 
-The verified HTTP surface is documented in [API_CONTRACT.md](API_CONTRACT.md). The only JSON route found in ERP Lite commit `f75a051` is `GET /health/`. Business screens in that checkout are HTML. This client does not invent list endpoints for them.
+The verified HTTP surface is documented in [API_CONTRACT.md](API_CONTRACT.md). The only JSON route found in ERP Lite commit `cf141a1` is `GET /health/`. Business screens in that checkout are HTML. This client does not invent list endpoints for them.
 
 ## What is blocked
 

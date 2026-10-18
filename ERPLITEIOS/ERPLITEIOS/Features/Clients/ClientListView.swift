@@ -49,7 +49,7 @@ struct ClientDetailView: View {
             if !client.notes.isEmpty {
                 Text(client.notes)
             }
-            Text("Deletion is blocked on the server when a client has sales or expenses. This screen does not delete records.")
+            Text("Deletion is blocked on the server when a client has sales, expenses, or a billing profile. This screen does not delete records.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }

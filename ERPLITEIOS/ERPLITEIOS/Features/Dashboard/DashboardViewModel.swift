@@ -67,7 +67,7 @@ final class DashboardViewModel {
             DashboardModule(
                 id: "inventory",
                 title: "Inventory",
-                detail: "Physical units. Not a SKU catalog.",
+                detail: "Physical units and a separate quantity SKU catalog.",
                 origin: .mock
             ),
             DashboardModule(
@@ -85,7 +85,7 @@ final class DashboardViewModel {
             DashboardModule(
                 id: "invoices",
                 title: "Invoices",
-                detail: "The same Sale records, shown as invoices.",
+                detail: "Billing invoices. A Sale is not the invoice document.",
                 origin: .mock
             ),
         ]

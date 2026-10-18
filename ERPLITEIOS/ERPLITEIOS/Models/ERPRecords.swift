@@ -2,7 +2,7 @@
 //  ERPRecords.swift
 //  ERPLITEIOS
 //
-//  Field names follow the Django models inspected in ERPLITE at f75a051.
+//  Field names follow the Django models inspected in ERPLITE at cf141a1.
 //  These types are not a claim that a JSON API returns them.
 
 import Foundation
@@ -61,12 +61,28 @@ enum SaleLineType: String, Equatable {
 
 enum LineFulfillment: String, Equatable {
     case notDelivered = "NOT_DELIVERED"
+    case partiallyDelivered = "PARTIALLY_DELIVERED"
     case delivered = "DELIVERED"
 
     var label: String {
         switch self {
         case .notDelivered: "Not Delivered"
+        case .partiallyDelivered: "Partially Delivered"
         case .delivered: "Delivered"
+        }
+    }
+}
+
+enum InvoiceStatus: String, Equatable {
+    case draft = "DRAFT"
+    case issued = "ISSUED"
+    case void = "VOID"
+
+    var label: String {
+        switch self {
+        case .draft: "Draft"
+        case .issued: "Issued"
+        case .void: "Void"
         }
     }
 }
@@ -113,6 +129,18 @@ struct InventoryItemRecord: Identifiable, Equatable {
     var notes: String
 }
 
+struct SKUProductRecord: Identifiable, Equatable {
+    var id: Int
+    var sku: String
+    var name: String
+    var isActive: Bool
+    var onHand: Int
+    var reserved: Int
+
+    /// `StockBalance.available` in `inventory/sku.py`: on hand minus reserved.
+    var available: Int { onHand - reserved }
+}
+
 struct ClientRecord: Identifiable, Equatable {
     var id: Int
     var clientNumber: String
@@ -138,10 +166,25 @@ struct SaleLineRecord: Identifiable, Equatable {
     var quantity: Int
     var unitPrice: Decimal
     var inventoryItemID: Int?
+    var skuProductID: Int?
+    /// Ignored for SKU lines. Those use shipped quantity, matching `sku_fulfillment_status`.
     var fulfillmentStatus: LineFulfillment
+    var shippedQuantity: Int = 0
+    var cancelledQuantity: Int = 0
 
     var lineTotal: Decimal {
         Money.cad(Decimal(quantity) * unitPrice)
+    }
+
+    var fulfillment: LineFulfillment {
+        guard skuProductID != nil else { return fulfillmentStatus }
+        if shippedQuantity == quantity {
+            return .delivered
+        }
+        if shippedQuantity > 0 {
+            return .partiallyDelivered
+        }
+        return .notDelivered
     }
 }
 
@@ -153,6 +196,8 @@ struct SaleRecord: Identifiable, Equatable {
     var saleDate: String
     var lines: [SaleLineRecord]
     var payments: [PaymentRecord]
+    /// Frozen grand total of the issued invoice, when one exists. A draft or void does not set this.
+    var issuedInvoiceGrandTotal: Decimal? = nil
 
     var saleType: SaleType {
         SaleClassification.saleType(forExternalInvoiceNumber: externalInvoiceNumber)
@@ -166,16 +211,25 @@ struct SaleRecord: Identifiable, Equatable {
         Money.cad(payments.reduce(Decimal.zero) { $0 + $1.amount })
     }
 
+    /// `billing.ceiling.payment_ceiling`: issued grand total, otherwise the sale total.
+    var amountDue: Decimal {
+        if let issuedInvoiceGrandTotal {
+            return Money.cad(issuedInvoiceGrandTotal)
+        }
+        return total
+    }
+
     var outstandingBalance: Decimal {
-        Money.cad(total - amountPaid)
+        Money.cad(amountDue - amountPaid)
     }
 
     var fulfillment: SaleFulfillment {
         if lines.isEmpty {
             return .notDelivered
         }
-        let delivered = lines.filter { $0.fulfillmentStatus == .delivered }.count
-        if delivered == 0 {
+        let delivered = lines.filter { $0.fulfillment == .delivered }.count
+        let partial = lines.contains { $0.fulfillment == .partiallyDelivered }
+        if delivered == 0 && !partial {
             return .notDelivered
         }
         if delivered == lines.count {
@@ -185,20 +239,20 @@ struct SaleRecord: Identifiable, Equatable {
     }
 
     var paymentStatus: PaymentStatus {
-        if total <= .zero {
+        if amountDue <= .zero {
             return .paid
         }
         if amountPaid <= .zero {
             return .unpaid
         }
-        if amountPaid < total {
+        if amountPaid < amountDue {
             return .partiallyPaid
         }
         return .paid
     }
 
     var paymentStatusLabel: String {
-        if total <= .zero {
+        if amountDue <= .zero {
             return "No Balance Due"
         }
         return paymentStatus.label
@@ -209,6 +263,45 @@ struct SaleRecord: Identifiable, Equatable {
             return "No external invoice number"
         }
         return externalInvoiceNumber
+    }
+}
+
+struct InvoiceLineRecord: Identifiable, Equatable {
+    var id: Int
+    var lineNumber: Int
+    var name: String
+    var quantity: Int
+    var lineNet: Decimal
+    var taxTotal: Decimal
+    var gross: Decimal
+    var sourceSKUCode: String
+}
+
+struct InvoiceRecord: Identifiable, Equatable {
+    var id: Int
+    var saleID: Int
+    var saleNumber: String
+    var clientName: String
+    var status: InvoiceStatus
+    var invoiceNumber: String?
+    var issueDate: String?
+    var subtotal: Decimal
+    var taxTotal: Decimal
+    var grandTotal: Decimal
+    var issuerLegalName: String
+    var lines: [InvoiceLineRecord]
+
+    var numberLabel: String {
+        if status == .draft {
+            return "Draft (unnumbered)"
+        }
+        return invoiceNumber ?? "Missing invoice number"
+    }
+
+    /// Issued invoices only. Payments stay on the sale and are not allocated per invoice.
+    func balanceDue(amountPaidOnSale: Decimal) -> Decimal? {
+        guard status == .issued else { return nil }
+        return Money.cad(grandTotal - amountPaidOnSale)
     }
 }
 
@@ -242,8 +335,10 @@ enum Money {
 
 struct ERPCatalog: Equatable {
     var inventory: [InventoryItemRecord]
+    var skus: [SKUProductRecord] = []
     var clients: [ClientRecord]
     var sales: [SaleRecord]
+    var invoices: [InvoiceRecord] = []
     var origin: DataOrigin
 }
 

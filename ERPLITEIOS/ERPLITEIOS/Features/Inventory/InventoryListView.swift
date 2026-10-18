@@ -15,20 +15,40 @@ struct InventoryListView: View {
     var body: some View {
         RecordListScaffold(
             title: "Inventory",
-            explanation: "Each row is one physical unit (InventoryItem). ERP Lite does not have a shared SKU catalog.",
+            explanation: "Physical units stay InventoryItem rows. SKU stock is a separate quantity catalog. This screen does not receive, adjust, or ship.",
             origin: viewModel.origin,
             state: viewModel.state,
             retry: { Task { await viewModel.load() } }
         ) {
-            ForEach(viewModel.items) { item in
-                NavigationLink {
-                    InventoryDetailView(item: item)
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.name)
-                        Text("\(item.inventoryNumber) · \(item.status.label)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+            if !viewModel.items.isEmpty {
+                Section("Physical units") {
+                    ForEach(viewModel.items) { item in
+                        NavigationLink {
+                            InventoryDetailView(item: item)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.name)
+                                Text("\(item.inventoryNumber) · \(item.status.label)")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            if !viewModel.skus.isEmpty {
+                Section("SKU stock") {
+                    ForEach(viewModel.skus) { sku in
+                        NavigationLink {
+                            SKUDetailView(product: sku)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(sku.name)
+                                Text("\(sku.sku) · \(sku.available) available")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
             }
@@ -61,6 +81,25 @@ struct InventoryDetailView: View {
             }
         }
         .navigationTitle(item.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct SKUDetailView: View {
+    var product: SKUProductRecord
+
+    var body: some View {
+        List {
+            LabeledContent("SKU", value: product.sku)
+            LabeledContent("Active", value: product.isActive ? "Yes" : "No")
+            LabeledContent("On hand", value: "\(product.onHand)")
+            LabeledContent("Reserved", value: "\(product.reserved)")
+            LabeledContent("Available", value: "\(product.available)")
+            Text("Quantities are whole units. Cost, receipts, and shipments stay on the server. This screen does not value stock.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .navigationTitle(product.name)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

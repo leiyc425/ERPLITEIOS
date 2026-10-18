@@ -28,7 +28,7 @@ struct MockERPReader: ERPReading {
 }
 
 extension ERPCatalog {
-    static let empty = ERPCatalog(inventory: [], clients: [], sales: [], origin: .mock)
+    static let empty = ERPCatalog(inventory: [], skus: [], clients: [], sales: [], invoices: [], origin: .mock)
 
     /// Obvious samples. Counts and balances are derived from these rows, not from the server.
     static let sample = ERPCatalog(
@@ -71,6 +71,16 @@ extension ERPCatalog {
                 purchaseSource: "",
                 vendorName: "Sample Vendor",
                 notes: ""
+            ),
+        ],
+        skus: [
+            SKUProductRecord(
+                id: 1,
+                sku: "SAMPLE-SKU",
+                name: "Sample quantity product",
+                isActive: true,
+                onHand: 8,
+                reserved: 2
             ),
         ],
         clients: [
@@ -118,7 +128,8 @@ extension ERPCatalog {
                         originalCurrency: "CAD",
                         originalAmount: Decimal(string: "40.00") ?? 40
                     ),
-                ]
+                ],
+                issuedInvoiceGrandTotal: Decimal(string: "40.00")
             ),
             SaleRecord(
                 id: 2,
@@ -175,6 +186,110 @@ extension ERPCatalog {
                         amount: Decimal(string: "5.00") ?? 5,
                         originalCurrency: "CAD",
                         originalAmount: Decimal(string: "5.00") ?? 5
+                    ),
+                ]
+            ),
+            SaleRecord(
+                id: 4,
+                saleNumber: "0004",
+                externalInvoiceNumber: "",
+                clientName: "Sample Company",
+                saleDate: "2026-03-02",
+                lines: [
+                    SaleLineRecord(
+                        id: 15,
+                        lineNumber: 1,
+                        lineType: .product,
+                        name: "Sample quantity product",
+                        quantity: 4,
+                        unitPrice: Decimal(string: "10.00") ?? 10,
+                        inventoryItemID: nil,
+                        skuProductID: 1,
+                        fulfillmentStatus: .notDelivered,
+                        shippedQuantity: 2,
+                        cancelledQuantity: 0
+                    ),
+                ],
+                payments: [],
+                issuedInvoiceGrandTotal: Decimal(string: "45.20")
+            ),
+        ],
+        invoices: [
+            InvoiceRecord(
+                id: 101,
+                saleID: 1,
+                saleNumber: "0001",
+                clientName: "Sample Company",
+                status: .issued,
+                invoiceNumber: "FM-2601001",
+                issueDate: "2026-01-15",
+                subtotal: Decimal(string: "40.00") ?? 40,
+                taxTotal: .zero,
+                grandTotal: Decimal(string: "40.00") ?? 40,
+                issuerLegalName: "Sample Issuer",
+                lines: [
+                    InvoiceLineRecord(
+                        id: 201,
+                        lineNumber: 1,
+                        name: "Sample sold unit",
+                        quantity: 1,
+                        lineNet: Decimal(string: "40.00") ?? 40,
+                        taxTotal: .zero,
+                        gross: Decimal(string: "40.00") ?? 40,
+                        sourceSKUCode: ""
+                    ),
+                ]
+            ),
+            InvoiceRecord(
+                id: 102,
+                saleID: 2,
+                saleNumber: "0002",
+                clientName: "Sample Person",
+                status: .draft,
+                invoiceNumber: nil,
+                issueDate: nil,
+                subtotal: Decimal(string: "30.00") ?? 30,
+                taxTotal: .zero,
+                grandTotal: Decimal(string: "30.00") ?? 30,
+                issuerLegalName: "Sample Issuer",
+                lines: []
+            ),
+            InvoiceRecord(
+                id: 103,
+                saleID: 3,
+                saleNumber: "0003",
+                clientName: "Sample Company",
+                status: .void,
+                invoiceNumber: "FM-2602001",
+                issueDate: "2026-02-10",
+                subtotal: Decimal(string: "20.00") ?? 20,
+                taxTotal: .zero,
+                grandTotal: Decimal(string: "20.00") ?? 20,
+                issuerLegalName: "Sample Issuer",
+                lines: []
+            ),
+            InvoiceRecord(
+                id: 104,
+                saleID: 4,
+                saleNumber: "0004",
+                clientName: "Sample Company",
+                status: .issued,
+                invoiceNumber: "FM-2603001",
+                issueDate: "2026-03-02",
+                subtotal: Decimal(string: "40.00") ?? 40,
+                taxTotal: Decimal(string: "5.20") ?? 5.2,
+                grandTotal: Decimal(string: "45.20") ?? 45.2,
+                issuerLegalName: "Sample Issuer",
+                lines: [
+                    InvoiceLineRecord(
+                        id: 204,
+                        lineNumber: 1,
+                        name: "Sample quantity product",
+                        quantity: 4,
+                        lineNet: Decimal(string: "40.00") ?? 40,
+                        taxTotal: Decimal(string: "5.20") ?? 5.2,
+                        gross: Decimal(string: "45.20") ?? 45.2,
+                        sourceSKUCode: "SAMPLE-SKU"
                     ),
                 ]
             ),
