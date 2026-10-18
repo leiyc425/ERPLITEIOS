@@ -1,0 +1,6 @@
+{
+  "comment": "Leave baseURL empty. Do not put credentials, tokens, or private hosts in this file.",
+  "baseURL": "",
+  "apiVersionPrefix": "",
+  "requestTimeoutSeconds": 30
+}

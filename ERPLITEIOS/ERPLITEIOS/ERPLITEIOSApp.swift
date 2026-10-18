@@ -2,16 +2,25 @@
 //  ERPLITEIOSApp.swift
 //  ERPLITEIOS
 //
-//  Created by Yichen Lei on 2026-10-18.
-//
 
 import SwiftUI
 
 @main
 struct ERPLITEIOSApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var appModel: AppModel
+
+    init() {
+        _appModel = State(initialValue: AppModel(dependencies: .live()))
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView(model: appModel)
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    Task { await appModel.refreshSessionIfNeeded() }
+                }
         }
     }
 }
