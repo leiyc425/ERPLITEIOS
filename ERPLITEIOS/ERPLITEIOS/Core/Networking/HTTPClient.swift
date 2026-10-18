@@ -53,7 +53,8 @@ final class URLSessionHTTPClient: HTTPClientProtocol {
             baseURL: baseURL,
             path: request.path,
             versionPrefix: request.versionPrefix ?? versionPrefix,
-            query: request.query
+            query: request.query,
+            trailingSlash: request.trailingSlash
         )
 
         var urlRequest = URLRequest(url: url)

@@ -6,16 +6,25 @@
 import SwiftUI
 
 struct DashboardView: View {
-    private let viewModel: DashboardViewModel
+    @State private var viewModel: DashboardViewModel
+    private let records: any ERPReading
     private let signOut: () async -> Void
 
     init(
         session: Session,
-        configuration: AppConfiguration,
+        dependencies: AppDependencies,
         signOut: @escaping () async -> Void
     ) {
-        viewModel = DashboardViewModel(session: session, configuration: configuration)
+        records = dependencies.records
         self.signOut = signOut
+        _viewModel = State(
+            initialValue: DashboardViewModel(
+                session: session,
+                configuration: dependencies.configuration,
+                records: dependencies.records,
+                health: dependencies.health
+            )
+        )
     }
 
     var body: some View {
@@ -25,7 +34,7 @@ struct DashboardView: View {
                     FlowmagikHeader(title: "Dashboard")
                     if viewModel.showsMockBanner {
                         MockDataBanner(
-                            message: "Mock data. These placeholders did not come from the ERP Lite backend."
+                            message: "Mock samples. Inventory, clients, and sales were not loaded from ERP Lite."
                         )
                     }
                 }
@@ -45,28 +54,68 @@ struct DashboardView: View {
                     Text(viewModel.backendDetail)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Text(viewModel.configuration.contractIntegrated ? "Contract integrated" : "No API contract integrated")
+                    Text(viewModel.configuration.contractIntegrated ? "Contract integrated" : "Business lists are not a live API")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    Button {
+                        Task { await viewModel.checkHealth() }
+                    } label: {
+                        if viewModel.isCheckingHealth {
+                            ProgressView()
+                        } else {
+                            Text("Check backend health")
+                        }
+                    }
+                    .accessibilityIdentifier("dashboard.health")
+                    if let healthMessage = viewModel.healthMessage {
+                        Text(healthMessage)
+                            .font(.footnote)
+                            .accessibilityIdentifier("dashboard.healthResult")
+                    }
                 }
 
-                Section("Modules") {
+                Section("Mock sample counts") {
+                    switch viewModel.state {
+                    case .idle, .loading:
+                        ProgressView()
+                    case .failed(let message):
+                        Text(message)
+                            .foregroundStyle(.red)
+                        Button("Try again") {
+                            Task { await viewModel.load() }
+                        }
+                    case .loaded, .empty:
+                        LabeledContent("In stock", value: "\(viewModel.inStockCount)")
+                        LabeledContent("Reserved", value: "\(viewModel.reservedCount)")
+                        LabeledContent("Sold", value: "\(viewModel.soldCount)")
+                        LabeledContent("Clients", value: "\(viewModel.clientCount)")
+                        LabeledContent("Sales", value: "\(viewModel.saleCount)")
+                        LabeledContent("Outstanding", value: Money.label(viewModel.outstanding))
+                        Text("Server dashboard metrics such as gross profit are HTML-only and are not shown here.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Records") {
                     ForEach(viewModel.modules) { module in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(module.title)
-                                Spacer()
-                                if module.origin == .mock {
+                        NavigationLink {
+                            destination(for: module.id)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(module.title)
+                                    Spacer()
                                     Text("MOCK")
                                         .font(.caption2.weight(.bold))
                                         .foregroundStyle(Theme.mockForeground)
                                 }
+                                Text(module.detail)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
                             }
-                            Text(module.detail)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
                         }
-                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("dashboard.\(module.id)")
                     }
                 }
             }
@@ -82,5 +131,22 @@ struct DashboardView: View {
             }
         }
         .accessibilityIdentifier("dashboard.root")
+        .task { await viewModel.load() }
+    }
+
+    @ViewBuilder
+    private func destination(for id: String) -> some View {
+        switch id {
+        case "inventory":
+            InventoryListView(records: records)
+        case "clients":
+            ClientListView(records: records)
+        case "sales":
+            SaleListView(records: records, purpose: .sales)
+        case "invoices":
+            SaleListView(records: records, purpose: .invoices)
+        default:
+            Text("This module is not available.")
+        }
     }
 }

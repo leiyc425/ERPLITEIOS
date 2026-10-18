@@ -31,7 +31,7 @@ struct RootView: View {
             case .authenticated(let session):
                 DashboardView(
                     session: session,
-                    configuration: model.dependencies.configuration
+                    dependencies: model.dependencies
                 ) {
                     await model.signOut()
                 }

@@ -12,12 +12,21 @@ struct DashboardViewModelTests {
             requestTimeout: 30,
             loadError: nil
         )
-        let viewModel = DashboardViewModel(session: session, configuration: configuration)
+        let viewModel = DashboardViewModel(
+            session: session,
+            configuration: configuration,
+            records: MockERPReader(catalog: .sample),
+            health: LiveHealthCheck(
+                configuration: configuration,
+                client: URLSessionHTTPClient(configuration: configuration, authorizer: PendingContractAuthorizer())
+            )
+        )
 
         #expect(viewModel.showsMockBanner)
         #expect(viewModel.accountLine == "Ada · mock session")
         #expect(viewModel.modules.allSatisfy { $0.origin == .mock })
-        #expect(viewModel.backendDetail.contains("does not call it"))
+        #expect(viewModel.backendDetail.contains("/health/"))
+        #expect(viewModel.backendDetail.contains("mock"))
         #expect(viewModel.configuration.contractIntegrated == false)
     }
 }

@@ -12,6 +12,8 @@ struct AppDependencies {
     var authService: any AuthServicing
     var httpClient: any HTTPClientProtocol
     var clock: any DateProviding
+    var records: any ERPReading
+    var health: any HealthChecking
 
     static func live(
         bundle: Bundle = .main,
@@ -46,7 +48,9 @@ struct AppDependencies {
             tokenStore: tokenStore,
             authService: authService,
             httpClient: httpClient,
-            clock: clock
+            clock: clock,
+            records: MockERPReader(catalog: .sample),
+            health: LiveHealthCheck(configuration: configuration, client: httpClient)
         )
     }
 
@@ -64,7 +68,9 @@ struct AppDependencies {
             tokenStore: tokenStore,
             authService: authService,
             httpClient: httpClient,
-            clock: clock
+            clock: clock,
+            records: MockERPReader(catalog: .sample),
+            health: LiveHealthCheck(configuration: configuration, client: httpClient)
         )
     }
 }

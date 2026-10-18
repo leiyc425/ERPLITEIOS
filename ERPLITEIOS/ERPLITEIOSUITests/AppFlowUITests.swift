@@ -28,6 +28,16 @@ final class AppFlowUITests: XCTestCase {
         let signOut = app.buttons["dashboard.signOut"]
         XCTAssertTrue(signOut.waitForExistence(timeout: 10))
         XCTAssertTrue(app.descendants(matching: .any)["mock-data-banner"].exists)
+
+        let inventory = app.descendants(matching: .any)["dashboard.inventory"]
+        if !inventory.isHittable {
+            app.swipeUp()
+        }
+        inventory.tap()
+        XCTAssertTrue(app.staticTexts["Sample physical unit"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["inventory.list"].exists)
+        app.navigationBars.buttons["Dashboard"].tap()
+
         signOut.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["login.root"].waitForExistence(timeout: 10))

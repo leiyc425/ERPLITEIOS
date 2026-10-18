@@ -16,6 +16,17 @@ struct RequestURLBuilderTests {
         #expect(url.absoluteString == "https://example.com/erp/api/v1/status?q=a%20b")
     }
 
+    @Test func keepsADjangoTrailingSlash() throws {
+        let url = try RequestURLBuilder.url(
+            baseURL: URL(string: "https://example.com")!,
+            path: "health",
+            versionPrefix: "",
+            query: [],
+            trailingSlash: true
+        )
+        #expect(url.absoluteString == "https://example.com/health/")
+    }
+
     @Test func omitsPrefixWhenUnset() throws {
         let url = try RequestURLBuilder.url(
             baseURL: base,

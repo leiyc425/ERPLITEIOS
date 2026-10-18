@@ -144,6 +144,53 @@ struct HTTPClientTests {
         #expect(response.headers.keys.contains { $0.caseInsensitiveCompare("Set-Cookie") == .orderedSame } == false)
     }
 
+    @Test func healthCheckDoesNotSendWithoutABaseURL() async {
+        let flag = RequestFlag()
+        StubURLProtocol.setHandler { _ in
+            flag.mark()
+            return StubURLProtocol.Response(status: 200, body: Data(), headers: [:])
+        }
+        defer { StubURLProtocol.setHandler(nil) }
+
+        let checker = LiveHealthCheck(
+            configuration: .mockDefault,
+            client: URLSessionHTTPClient(
+                configuration: .mockDefault,
+                protocolClasses: [StubURLProtocol.self],
+                authorizer: PendingContractAuthorizer()
+            )
+        )
+        await #expect(throws: APIError.backendNotConfigured) {
+            try await checker.check()
+        }
+        #expect(flag.isMarked == false)
+    }
+
+    @Test func healthCheckUsesTheSiteRootPath() async throws {
+        let body = #"{"status":"ok","database":"ok"}"#.data(using: .utf8) ?? Data()
+        let requestedURL = URLBox()
+        StubURLProtocol.setHandler { request in
+            requestedURL.set(request.url?.absoluteString)
+            return StubURLProtocol.Response(status: 200, body: body, headers: [:])
+        }
+        defer { StubURLProtocol.setHandler(nil) }
+
+        var configuration = configuredExample()
+        configuration.apiVersionPrefix = "api/v1"
+        let checker = LiveHealthCheck(
+            configuration: configuration,
+            client: URLSessionHTTPClient(
+                configuration: configuration,
+                protocolClasses: [StubURLProtocol.self],
+                authorizer: PendingContractAuthorizer()
+            )
+        )
+        let report = try await checker.check()
+        #expect(report.origin == .backend)
+        #expect(report.status == HealthStatus(status: "ok", database: "ok"))
+        #expect(requestedURL.value == "https://example.com/health/")
+    }
+
     private func configuredExample() -> AppConfiguration {
         AppConfiguration(
             baseURL: URL(string: "https://example.com"),

@@ -1,8 +1,8 @@
 # API integration
 
-The iOS app is a client of ERP Lite. It is not a second implementation of the ERP. Until the Django project publishes an HTTP contract, this repository must not invent endpoints, payloads, or an authentication scheme and then call them.
+The iOS app is a client of ERP Lite. It is not a second implementation of the ERP.
 
-Phase 0 inspected only this iOS repository. It does not describe routes inside `ERPLite`.
+The verified HTTP surface is documented in [API_CONTRACT.md](API_CONTRACT.md). The only JSON route found in ERP Lite commit `f75a051` is `GET /health/`. Business screens in that checkout are HTML. This client does not invent list endpoints for them.
 
 ## What is blocked
 

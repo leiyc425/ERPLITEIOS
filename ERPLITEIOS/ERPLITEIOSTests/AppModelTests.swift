@@ -62,7 +62,9 @@ struct AppModelTests {
                 tokenStore: InMemoryTokenStore(),
                 authService: MockAuthService(tokenStore: InMemoryTokenStore(), clock: SystemDateProvider()),
                 httpClient: trap,
-                clock: SystemDateProvider()
+                clock: SystemDateProvider(),
+                records: MockERPReader(catalog: .empty),
+                health: LiveHealthCheck(configuration: configuration, client: trap)
             )
         )
         await model.bootstrap()
@@ -90,7 +92,9 @@ struct AppModelTests {
                     tokenStore: store,
                     authService: auth,
                     httpClient: trap,
-                    clock: clock
+                    clock: clock,
+                    records: MockERPReader(catalog: .sample),
+                    health: LiveHealthCheck(configuration: .mockDefault, client: trap)
                 )
             )
         }

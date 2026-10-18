@@ -12,7 +12,8 @@ enum RequestURLBuilder {
         baseURL: URL,
         path: String,
         versionPrefix: String?,
-        query: [URLQueryItem]
+        query: [URLQueryItem],
+        trailingSlash: Bool = false
     ) throws -> URL {
         let pathSegments = try segments(from: path)
         let prefixSegments = try segments(from: versionPrefix ?? "")
@@ -23,6 +24,9 @@ enum RequestURLBuilder {
 
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             throw APIError.invalidRequestURL
+        }
+        if trailingSlash, !components.path.hasSuffix("/") {
+            components.path = components.path + "/"
         }
         if !query.isEmpty {
             components.queryItems = query

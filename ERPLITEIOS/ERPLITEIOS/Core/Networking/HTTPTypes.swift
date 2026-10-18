@@ -24,6 +24,8 @@ struct HTTPRequest: Equatable {
     var requiresAuthentication: Bool
     /// Overrides the configured version prefix for this call. Nil uses configuration.
     var versionPrefix: String?
+    /// Django routes in ERP Lite use a trailing slash. Redirects are not followed.
+    var trailingSlash: Bool
 
     init(
         method: HTTPMethod,
@@ -33,7 +35,8 @@ struct HTTPRequest: Equatable {
         body: Data? = nil,
         timeout: TimeInterval? = nil,
         requiresAuthentication: Bool = false,
-        versionPrefix: String? = nil
+        versionPrefix: String? = nil,
+        trailingSlash: Bool = false
     ) {
         self.method = method
         self.path = path
@@ -43,6 +46,7 @@ struct HTTPRequest: Equatable {
         self.timeout = timeout
         self.requiresAuthentication = requiresAuthentication
         self.versionPrefix = versionPrefix
+        self.trailingSlash = trailingSlash
     }
 
     mutating func attachJSON<T: Encodable>(_ value: T) throws {

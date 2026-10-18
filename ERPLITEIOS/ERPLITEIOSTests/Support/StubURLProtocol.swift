@@ -1,6 +1,24 @@
 import Foundation
 @testable import ERPLITEIOS
 
+/// Records a URL captured on URLSession's callback thread.
+final class URLBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: String?
+
+    func set(_ value: String?) {
+        lock.lock()
+        stored = value
+        lock.unlock()
+    }
+
+    var value: String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return stored
+    }
+}
+
 /// Records a header captured on URLSession's callback thread.
 final class HeaderBox: @unchecked Sendable {
     private let lock = NSLock()

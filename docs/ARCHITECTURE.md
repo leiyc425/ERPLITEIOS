@@ -96,12 +96,14 @@ JSON encoding uses ISO-8601 dates and does not rewrite keys. That choice is prov
 
 ## Mock versus backend data
 
-`DataOrigin.mock` marks every dashboard placeholder. The dashboard keeps the mock banner up while any module is mock, including when a base URL is already saved. `AppConfiguration.contractIntegrated` is `false` for this phase, so a configured URL cannot be described as a live integration.
+`DataOrigin.mock` marks sample inventory, clients, and sales. A health report decoded from `GET /health/` is `DataOrigin.backend`. `AppConfiguration.contractIntegrated` stays false because list screens are not a live API.
 
-## What this phase deliberately leaves out
+Phase 1A records the Django models and the HTML-versus-JSON split in [BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md), [DATA_MODELS.md](DATA_MODELS.md), and [API_CONTRACT.md](API_CONTRACT.md).
 
-- ERP Lite resource models and endpoints
-- A production login implementation
+## What remains out of scope
+
+- Live list and mutation calls. Those JSON routes do not exist in the inspected backend
+- Posting the Django HTML login form
 - Third-party packages
 - Certificate pinning, refresh-token rotation, and company or tenant selection
 - Any hardcoded host, token, or password
