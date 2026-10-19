@@ -17,6 +17,7 @@ struct AppDependencies {
     var connection: ConnectionSettings
     var shell: AppShellState = AppShellState()
     var readCache: ProtectedMemoryCache = ProtectedMemoryCache()
+    var intake = IntakeDraftStore()
 
     static func live(
         bundle: Bundle = .main,

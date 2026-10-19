@@ -32,12 +32,14 @@ struct AppModelTests {
             accountLabel: "ada",
             at: fixture.clock.date
         )
+        fixture.model.dependencies.intake.draft = IntakeDraft(kind: .sku, capturedCode: "SAMPLE-SKU", symbology: .manual)
         await fixture.model.signOut()
         #expect(fixture.model.phase == .signedOut)
         #expect(try fixture.store.load() == nil)
         #expect(fixture.model.dependencies.shell.tab == .dashboard)
         #expect(fixture.model.dependencies.shell.generation == 1)
         #expect(fixture.model.dependencies.readCache.isEmpty)
+        #expect(fixture.model.dependencies.intake.draft == nil)
     }
 
     @Test func refreshExpiresAnOldMockSession() async throws {
@@ -45,9 +47,11 @@ struct AppModelTests {
         await fixture.model.bootstrap()
         try await fixture.model.signIn(username: "ada", password: "secret")
         fixture.model.dependencies.shell.tab = .sales
+        fixture.model.dependencies.intake.draft = IntakeDraft(kind: .asset, capturedCode: "A-0001", symbology: .qr)
         fixture.clock.advance(by: 61)
         await fixture.model.refreshSessionIfNeeded()
         #expect(fixture.model.phase == .sessionExpired)
+        #expect(fixture.model.dependencies.intake.draft == nil)
         #expect(fixture.model.dependencies.shell.tab == .dashboard)
         #expect(fixture.model.dependencies.shell.generation == 1)
     }
@@ -62,8 +66,10 @@ struct AppModelTests {
                 isMock: true
             )
         )
+        fixture.model.dependencies.intake.draft = IntakeDraft(kind: .inventoryItem, capturedCode: "0001", symbology: .code128)
         await fixture.model.bootstrap()
         #expect(fixture.model.phase == .sessionExpired)
+        #expect(fixture.model.dependencies.intake.draft == nil)
     }
 
     @Test func invalidConfigurationStopsLaunch() async {

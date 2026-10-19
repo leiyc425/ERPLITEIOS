@@ -8,7 +8,11 @@ import SwiftUI
 struct DashboardView: View {
     var shell: AppShellState
     @State private var viewModel: DashboardViewModel
+    @State private var showScan = false
     private let signOut: () async -> Void
+    private let records: any ERPProviding
+    private let clock: any DateProviding
+    private let drafts: IntakeDraftStore
 
     init(
         session: Session,
@@ -17,6 +21,9 @@ struct DashboardView: View {
     ) {
         shell = dependencies.shell
         self.signOut = signOut
+        records = dependencies.records
+        clock = dependencies.clock
+        drafts = dependencies.intake
         _viewModel = State(
             initialValue: DashboardViewModel(
                 session: session,
@@ -111,6 +118,12 @@ struct DashboardView: View {
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Scan") {
+                    showScan = true
+                }
+                .accessibilityIdentifier("dashboard.scan")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Sign out") {
                     Task { await signOut() }
@@ -120,5 +133,44 @@ struct DashboardView: View {
         }
         .accessibilityIdentifier("dashboard.root")
         .task { await viewModel.load() }
+        .sheet(isPresented: $showScan) {
+            ScanSheet(records: records, drafts: drafts, clock: clock)
+        }
+    }
+}
+
+private struct ScanSheet: View {
+    var records: any ERPProviding
+    var drafts: IntakeDraftStore
+    var clock: any DateProviding
+    @State private var model: ScanWorkflowModel?
+
+    var body: some View {
+        Group {
+            if let model {
+                ScanWorkflowView(model: model)
+            } else {
+                ProgressView("Preparing scan")
+                    .accessibilityIdentifier("scan.loading")
+            }
+        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        guard model == nil else { return }
+        let resolver: any ScanResolving
+        do {
+            let catalog = try await records.loadCatalog()
+            resolver = CatalogScanResolver(catalog: catalog)
+        } catch {
+            resolver = FailedScanResolver(message: "The sample catalog could not be loaded. No request was sent.")
+        }
+        model = ScanWorkflowModel(
+            resolver: resolver,
+            drafts: drafts,
+            clock: clock,
+            availability: DeviceScanner.availability
+        )
     }
 }

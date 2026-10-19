@@ -153,6 +153,30 @@ extension ERPCatalog {
                 onHand: 8,
                 reserved: 2
             ),
+            SKUProductRecord(
+                id: 2,
+                sku: "SHARED-CODE",
+                name: "Shared code product",
+                isActive: true,
+                onHand: 0,
+                reserved: 0
+            ),
+        ],
+        assets: [
+            AssetRecord(
+                id: 1,
+                assetNumber: "A-0001",
+                name: "Sample laptop",
+                assetType: "LAPTOP",
+                status: "IN_USE"
+            ),
+            AssetRecord(
+                id: 2,
+                assetNumber: "SHARED-CODE",
+                name: "Shared code asset",
+                assetType: "OTHER",
+                status: "IDLE"
+            ),
         ],
         clients: [
             ClientRecord(

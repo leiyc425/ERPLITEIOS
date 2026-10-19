@@ -1,7 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%@ · %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@%3$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld available"
+          }
+        }
+      }
+    },
+    "%@ · sale %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · sale %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%lld. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. %2$@"
+          }
+        }
+      }
+    },
+    "Acquired" : {
+
+    },
+    "Active" : {
+
+    },
+    "Address" : {
+
+    },
+    "Amount due" : {
+
+    },
+    "Availability" : {
+
+    },
+    "Available" : {
+
+    },
     "Backend" : {
+
+    },
+    "Balance due" : {
+
+    },
+    "Billing profile" : {
+
+    },
+    "Business data" : {
+
+    },
+    "Business lists are not a live API" : {
+
+    },
+    "Check backend health" : {
+
+    },
+    "Clear saved URL" : {
+
+    },
+    "Client" : {
+
+    },
+    "Client number" : {
+
+    },
+    "Clients" : {
+
+    },
+    "Connection" : {
+
+    },
+    "Contact" : {
 
     },
     "Continue to sign in" : {
@@ -29,6 +140,9 @@
         }
       }
     },
+    "Creating, editing, and deleting stay on the server. A billing profile also blocks client deletion there." : {
+
+    },
     "Dashboard" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -39,6 +153,15 @@
           }
         }
       }
+    },
+    "Default" : {
+
+    },
+    "Development base URL" : {
+
+    },
+    "Email" : {
+
     },
     "ERP Lite" : {
       "extractionState" : "manual",
@@ -54,6 +177,12 @@
     "ERP Lite on the server remains the source of truth for accounts, permissions, and records." : {
 
     },
+    "External number" : {
+
+    },
+    "External reference" : {
+
+    },
     "Flowmagik" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -65,16 +194,112 @@
         }
       }
     },
+    "Fulfillment" : {
+
+    },
+    "Grand total" : {
+
+    },
+    "Health" : {
+
+    },
+    "https://example.com" : {
+
+    },
+    "Inventory" : {
+
+    },
+    "Inventory number" : {
+
+    },
+    "Invoice number" : {
+
+    },
+    "Invoices" : {
+
+    },
+    "Issue date" : {
+
+    },
+    "Issued balance due" : {
+
+    },
+    "Issued balance due adds stored invoice grand totals minus each sale’s payments. Drafts, void invoices, tax, profit, and COGS are not calculated here." : {
+
+    },
+    "Issuer" : {
+
+    },
+    "Launch URL" : {
+
+    },
+    "Legal billing name" : {
+
+    },
+    "Limits" : {
+
+    },
+    "Lines" : {
+
+    },
+    "Live request" : {
+
+    },
+    "Loading dashboard" : {
+
+    },
     "MOCK" : {
 
     },
     "Mock expiry" : {
 
     },
-    "Modules" : {
+    "Mock sample counts" : {
 
     },
-    "No API contract integrated" : {
+    "No %@" : {
+
+    },
+    "No billing profile is on this sample." : {
+
+    },
+    "No clients match this search." : {
+
+    },
+    "No invoices match this search." : {
+
+    },
+    "No launch URL is configured." : {
+
+    },
+    "No payments on this sample." : {
+
+    },
+    "No physical units match this search." : {
+
+    },
+    "No sales match this search." : {
+
+    },
+    "No sample records are loaded." : {
+
+    },
+    "No SKUs match this search." : {
+
+    },
+    "On hand" : {
+
+    },
+    "Open" : {
+
+    },
+    "Open %@" : {
+
+    },
+    "Outstanding" : {
+
+    },
+    "Paid" : {
 
     },
     "Password" : {
@@ -88,7 +313,94 @@
         }
       }
     },
+    "Payment" : {
+
+    },
+    "Payments" : {
+
+    },
+    "Payments stay on the sale. A void is not a refund. Issuing, voiding, and PDF download stay on the server." : {
+
+    },
+    "Phone" : {
+
+    },
+    "Physical units" : {
+
+    },
+    "Purchase cost" : {
+
+    },
+    "Purchase source" : {
+
+    },
+    "Quantities are whole units. Cost, receipts, and shipments stay on the server. This screen does not value stock." : {
+
+    },
+    "Reserved" : {
+
+    },
+    "Reset search" : {
+
+    },
+    "Reset SKU filters" : {
+
+    },
+    "Reset unit filters" : {
+
+    },
+    "Sale" : {
+
+    },
+    "Sale date" : {
+
+    },
+    "Sale number" : {
+
+    },
+    "Sale payments" : {
+
+    },
+    "Sale total" : {
+
+    },
+    "Sales" : {
+
+    },
+    "Save URL" : {
+
+    },
+    "Saved for health checks: %@" : {
+
+    },
+    "Search clients" : {
+
+    },
+    "Search invoices" : {
+
+    },
+    "Search physical units" : {
+
+    },
+    "Search sales" : {
+
+    },
+    "Search SKU stock" : {
+
+    },
+    "Search SKUs" : {
+
+    },
+    "Search units" : {
+
+    },
+    "Sends GET /health/ only. Does not load business records." : {
+
+    },
     "Session" : {
+
+    },
+    "Settings" : {
 
     },
     "Sign in" : {
@@ -113,6 +425,21 @@
         }
       }
     },
+    "SKU" : {
+
+    },
+    "SKU available" : {
+
+    },
+    "SKU stock" : {
+
+    },
+    "Sort" : {
+
+    },
+    "Sort SKUs" : {
+
+    },
     "Starting ERP Lite" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -123,6 +450,18 @@
           }
         }
       }
+    },
+    "Status" : {
+
+    },
+    "Subtotal" : {
+
+    },
+    "Tax" : {
+
+    },
+    "The external reference classifies the sale. It is not the billing invoice number. Creating, editing, shipping, and paying stay on the server." : {
+
     },
     "Try again" : {
       "extractionState" : "manual",
@@ -135,6 +474,21 @@
         }
       }
     },
+    "Type" : {
+
+    },
+    "Units in stock" : {
+
+    },
+    "Units reserved" : {
+
+    },
+    "Units sold" : {
+
+    },
+    "Unpaid sales" : {
+
+    },
     "Username" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -145,6 +499,9 @@
           }
         }
       }
+    },
+    "Vendor" : {
+
     }
   },
   "version" : "1.0"

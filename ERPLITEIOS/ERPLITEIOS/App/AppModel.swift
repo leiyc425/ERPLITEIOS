@@ -82,6 +82,7 @@ final class AppModel {
     private func endProtectedUse() {
         dependencies.shell.reset()
         dependencies.readCache.invalidateAll()
+        dependencies.intake.discard()
     }
 
     private func restoreAuthenticatedSession() async {

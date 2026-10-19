@@ -116,6 +116,14 @@ Nothing in this cache is written to UserDefaults, the keychain, or a file. Do no
 
 A health result shown in Settings is cleared when that URL is saved or cleared, including while a check is still in flight. The check remains `GET /health/` and does not enable business lists.
 
+## Scanning and unsent drafts
+
+Phase 1D adds a Scan action on the Dashboard. Recognition, lookup, and draft editing are separate. The camera path uses VisionKit `DataScannerViewController` when the device supports it. The Simulator does not. Manual entry is the complete alternative and is what tests use.
+
+Lookup compares the raw code with sample SKU codes, inventory numbers, external inventory numbers, and asset numbers. It does not call the network. A miss against the sample catalog is labeled as a mock miss. Drafts stay in `IntakeDraftStore` and are discarded on sign-out, session expiry, and explicit cancel. Photos attached to a draft are in-memory JPEG data, not files and not uploads.
+
+The verified Django gap and the proposed future API are in [SCANNING_AND_INTAKE.md](SCANNING_AND_INTAKE.md) and [MOBILE_API_REQUIREMENTS.md](MOBILE_API_REQUIREMENTS.md).
+
 ## What remains out of scope
 
 - Live list and mutation calls. Those JSON routes do not exist in the inspected backend

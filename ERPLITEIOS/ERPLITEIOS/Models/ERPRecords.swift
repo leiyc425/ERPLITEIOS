@@ -348,9 +348,18 @@ enum Money {
     }
 }
 
+struct AssetRecord: Identifiable, Equatable {
+    var id: Int
+    var assetNumber: String
+    var name: String
+    var assetType: String
+    var status: String
+}
+
 struct ERPCatalog: Equatable {
     var inventory: [InventoryItemRecord]
     var skus: [SKUProductRecord] = []
+    var assets: [AssetRecord] = []
     var clients: [ClientRecord]
     var sales: [SaleRecord]
     var invoices: [InvoiceRecord] = []
